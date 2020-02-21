@@ -1,0 +1,4 @@
+Memory for the program is usually allocated in heaps. Accessing a memory location immediately after valid memory often doesn't cause a memory access violation as it is still located in the heap. Case III crashes because the process tries to access 0x0, which is a memory location not belonging to the process.
+
+Memory leaks often go unnoticed in user aplications as the operating system releases the memory when the process is closed. It only becomes an issue if the aplication runs for an extended period of time, exhausting the system's memory resources. As services in a server often run continuously, memory leaks are a big issue, especially in code that runs repeatedly. Over time it will consume the server's memory, forcing a restart and the subsequent downtime.
+
