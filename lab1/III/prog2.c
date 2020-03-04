@@ -4,22 +4,14 @@
 #include <string.h>
 #include <dlfcn.h>
 
-// The great guide on how to compile this mess
-
-// Start by generating Position Independent Code objects from the .c files
-// gcc -fpic -c lib1.c lib2.c
-
-// Then create shared libraries from the object files
+// Create shared libraries from the object files
 // -shared 	: makes the libraries shared
 // -ldl 	: links the libdl library
-// gcc -fpic -shared -ldl -o lib1.so lib1.o
-// gcc -fpic -shared -ldl -o lib2.so lib2.o
+// gcc -fpic -shared -ldl lib1.c -o lib1.so 
+// gcc -fpic -shared -ldl lib2.c -o lib2.so 
 
-// Compiling a program that makes use of these libraries requires you link them
-// -L		: locates the libraries, in this case it's the current directory
-// -l1 		: links "lib1.so", notice the "lib" prefix and ".so" suffix are added automatically
-// -l2 		: links "lib2.so"
-// gcc prog2.c -L. -l1 -l2 -ldl -o prog2
+// Compile the program normally
+// gcc prog2.c -o prog2
 
 int main(){
 	int a;
