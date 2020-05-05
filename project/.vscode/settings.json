@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "ui_library.h": "c",
+        "server_connection.h": "c"
+    }
+}
