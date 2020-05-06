@@ -33,6 +33,7 @@ void connect_to_server (char* server_ip, char* server_port)
     }
 
     // Connect to server
+    if(connect(server_socket, (const struct sockaddr*)&server_addr, sizeof(server_addr)) == -1)
     {
         perror("ERROR - Server connection error");
         exit(EXIT_FAILURE);

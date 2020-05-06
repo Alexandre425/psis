@@ -35,13 +35,15 @@ void* connect_to_clients (void* a)
     while (1)
     {
         puts("Waiting for client");
-        // Accept blocks until a client connects
+        // Accept connections - blocks until a client connects
         client_socket = accept(listen_socket, NULL, NULL);   // Client address is ignored
         if (client_socket == -1)
         {
             perror("ERROR - Accept failed");
             exit(EXIT_FAILURE);
         }
+
+        fprintf(stdout, "Player [PLAYER_ID] connected!\n");
 
         // Thread to handle client communications
     }
