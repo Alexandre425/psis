@@ -33,7 +33,6 @@ void connect_to_server (char* server_ip, char* server_port)
     }
 
     // Connect to server
-    
     {
         perror("ERROR - Server connection error");
         exit(EXIT_FAILURE);

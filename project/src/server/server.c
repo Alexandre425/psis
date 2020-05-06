@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <SDL2/SDL.h>
 
-#include "UI_library.h"
+#include "../../3rd/UI_library.h"
 #include "server_connection.h"
 
 int main (void)

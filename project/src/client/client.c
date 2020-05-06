@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <arpa/inet.h>
 
-#include "UI_library.h"
+#include "../../3rd/UI_library.h"
 #include "client_connection.h"
 
 int main (int argc, char* argv[])
@@ -23,6 +23,8 @@ int main (int argc, char* argv[])
     char* port_str = strtok(NULL, ":");
 
     connect_to_server(ip_str, port_str);
+
+    create_board_window(10, 10);
 
     return 0;
 }
