@@ -7,7 +7,7 @@
 
 #include "client_connection.h"
 
-void connect_to_server (char* server_ip, char* server_port)
+int connect_to_server (char* server_ip, char* server_port)
 {
     puts("Connecting to server");
 
@@ -39,5 +39,7 @@ void connect_to_server (char* server_ip, char* server_port)
         exit(EXIT_FAILURE);
     }
 
-    puts("Connection established");
+    puts("Connection established!");
+
+    return server_socket;
 }

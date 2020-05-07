@@ -58,7 +58,7 @@ int create_board_window(int dim_x, int dim_y){
    }
 
 //load monster
- 	SDL_Surface* loadedSurface = IMG_Load("./monster.png");
+ 	SDL_Surface* loadedSurface = IMG_Load("res/monster.png");
    if( loadedSurface == NULL ){
        printf( "Unable to load image %s! SDL_image Error: %s\n", "./monster.png", IMG_GetError() );
  			exit(-1);
@@ -68,7 +68,7 @@ int create_board_window(int dim_x, int dim_y){
    }
 
 	 //load pacman
-	 loadedSurface = IMG_Load("./pacman.png");
+	 loadedSurface = IMG_Load("res/pacman.png");
  	if( loadedSurface == NULL ){
  			printf( "Unable to load image %s! SDL_image Error: %s\n", "./pacman.png", IMG_GetError() );
  		 exit(-1);
@@ -78,7 +78,7 @@ int create_board_window(int dim_x, int dim_y){
  	}
 
 	//load lemon
-	loadedSurface = IMG_Load("./lemon.png");
+	loadedSurface = IMG_Load("res/lemon.png");
  if( loadedSurface == NULL ){
 		 printf( "Unable to load image %s! SDL_image Error: %s\n", "./lemon.png", IMG_GetError() );
 		exit(-1);
@@ -88,7 +88,7 @@ int create_board_window(int dim_x, int dim_y){
  }
 
  //load brick
- loadedSurface = IMG_Load("./brick.png");
+ loadedSurface = IMG_Load("res/brick.png");
 if( loadedSurface == NULL ){
 		printf( "Unable to load image %s! SDL_image Error: %s\n", "./brick.png", IMG_GetError() );
 	 exit(-1);
@@ -98,7 +98,7 @@ if( loadedSurface == NULL ){
 }
 
 //load brick
-loadedSurface = IMG_Load("./cherry.png");
+loadedSurface = IMG_Load("res/cherry.png");
 if( loadedSurface == NULL ){
 	 printf( "Unable to load image %s! SDL_image Error: %s\n", "./cherry.png", IMG_GetError() );
 	exit(-1);

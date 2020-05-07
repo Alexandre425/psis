@@ -4,8 +4,6 @@
 
 // Defines structures pertaining to the game, that both the client and the server should recognize
 
-typedef uint32_t Color; // Color stored in 0xRRGGBB format
-
 enum FruitType {fruit_lemon, fruit_cherry};
 
 enum TileType {tile_empty, tile_brick};

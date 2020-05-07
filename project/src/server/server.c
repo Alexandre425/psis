@@ -21,6 +21,7 @@ typedef struct _Player
 typedef struct _Game
 {
     Board board;
+    unsigned int max_players;
     unsigned int n_players;
     Player* players;
     Fruit* fruits;
@@ -40,18 +41,18 @@ void read_board(Game* game, char* path)
     // Allocate collumns
     game->board.board = malloc_check(sizeof(int*) * game->board.board_size.x);
     // Allocate lines
-    for (int i = 0; i < game->board.board_size.y; ++i)
+    for (unsigned int i = 0; i < game->board.board_size.y; ++i)
     {
         game->board.board[i] = malloc_check(sizeof(int) * game->board.board_size.y);
     }
 
     // Read the board line by line
     int tile = 0; 
-    for (int i = 0; i < game->board.board_size.y; ++i)
+    for (unsigned int i = 0; i < game->board.board_size.y; ++i)
     {
         // Catch the \n
         fgetc(board_file);
-        for (int j = 0; j < game->board.board_size.x; ++j)
+        for (unsigned int j = 0; j < game->board.board_size.x; ++j)
         {
             tile = fgetc(board_file);
             switch (tile)
@@ -75,6 +76,32 @@ void read_board(Game* game, char* path)
     fclose(board_file);
 }
 
+// Clears out the board
+void clear_board(Game* game)
+{
+    for (unsigned int i = 0; i < game->board.board_size.x; ++i)
+    {
+        for (unsigned int j = 0; j < game->board.board_size.y; ++j)
+        {
+            clear_place(i, j);
+        }
+    }
+}
+
+// Draws the bricks, needs to run only once
+void draw_bricks(Game* game)
+{
+    for (unsigned int i = 0; i < game->board.board_size.x; ++i)
+    {
+        for (unsigned int j = 0; j < game->board.board_size.y; ++j)
+        {
+            if (game->board.board[i][j] == tile_brick)
+                paint_brick(i, j);
+        }
+    }
+}
+
+
 int main (void)
 {
     // Initialize the game structure
@@ -91,7 +118,36 @@ int main (void)
     pthread_t connect_to_clients_thread;
     pthread_create(&connect_to_clients_thread, NULL, connect_to_clients, NULL);
 
+    // Create the SDL window
+    create_board_window(game->board.board_size.x, game->board.board_size.x);
+
+
+    // Draw the board, just the tiles
+    draw_bricks(game);
+    // Main poll and draw loop
+    SDL_Event event;
+    bool quit = false;
+    while (!quit){
+		while (SDL_PollEvent(&event)) {
+            switch (event.type)
+            {
+            case SDL_QUIT:          // Quit the program when the window is closed
+                close_board_windows();
+                quit = true;
+                break;
+            
+            default:
+                break;
+            }
+		}
+
+        
+	}
+
     pthread_join(connect_to_clients_thread, NULL);
+
+
+
 
     return 0;
 }
