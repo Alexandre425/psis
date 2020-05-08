@@ -1,9 +1,22 @@
 #pragma once
 
-// Simple vector structs and functions
+// Simple integer vector functions
 
-typedef struct _Vec
-{
-    int x;
-    int y;
-} Vector;
+typedef struct _Vec Vector;
+
+// Creates a new vector
+Vector* vec_create (int x, int y);
+// Destroys a vector
+void vec_destroy (Vector* vec);
+
+// Sets both vector variables
+void vec_set (Vector* vec, int x, int y);
+// Sets the vector's x variable
+void vec_set_x (Vector* vec, int x);
+// Sets the vector's y variable
+void vec_set_y (Vector* vec, int y);
+
+// Gets the vector's x variable
+int vec_get_x (Vector* vec);
+// Gets the vector's y variable
+int vec_get_y (Vector* vec);

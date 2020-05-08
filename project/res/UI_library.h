@@ -13,3 +13,4 @@ void paint_lemon(int  board_x, int board_y );
 void paint_cherry(int  board_x, int board_y);
 void paint_brick(int  board_x, int board_y );
 void clear_place(int  board_x, int board_y);
+

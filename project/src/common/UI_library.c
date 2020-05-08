@@ -181,9 +181,9 @@ void priv_paint_place(int  board_x, int board_y , int r, int g, int b, SDL_Textu
 	}
 	SDL_SetRenderTarget(renderer, NULL);
 	SDL_RenderCopy(renderer, display, NULL, NULL);
-	SDL_RenderPresent(renderer);
 
-
+	// Removed to allow presenting the render with all changes made simultaneously
+	//SDL_RenderPresent(renderer);
 }
 void paint_pacman(int  board_x, int board_y , int r, int g, int b){
 	priv_paint_place(board_x, board_y , r, g, b, pacman);
@@ -211,4 +211,16 @@ void clear_place(int  board_x, int board_y){
 void get_board_place(int mouse_x, int mouse_y, int * board_x, int *board_y){
 	*board_x = mouse_x / col_width;
 	*board_y = mouse_y / row_height;
+}
+
+void render_board(void)
+{
+	SDL_RenderPresent(renderer);
+}
+
+void clear_board(int size_x, int size_y)
+{
+	for (unsigned int i; i < size_x; ++i)
+		for (unsigned int j; j < size_y; ++j)
+			clear_place(i, j);
 }

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <stdint.h>
+
 // Random useful functions, defs and structs
 
-typedef u_int32_t Color; // Color stored in 0xRRGGBB format
+typedef uint32_t Color; // Color stored in 0xRRGGBB format
 
 // Allocates, zeroes and checks SIZE bytes of memory
 void* malloc_check(size_t SIZE);

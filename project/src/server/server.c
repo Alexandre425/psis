@@ -20,7 +20,7 @@ typedef struct _Player
 
 typedef struct _Game
 {
-    Board board;
+    Board* board;
     unsigned int max_players;
     unsigned int n_players;
     Player* players;
@@ -37,32 +37,27 @@ void read_board(Game* game, char* path)
         exit(EXIT_FAILURE);
     }
     // Read the board size
-    fscanf(board_file, "%d %d", &game->board.board_size.x, &game->board.board_size.y);
-    // Allocate collumns
-    game->board.board = malloc_check(sizeof(int*) * game->board.board_size.x);
-    // Allocate lines
-    for (unsigned int i = 0; i < game->board.board_size.y; ++i)
-    {
-        game->board.board[i] = malloc_check(sizeof(int) * game->board.board_size.y);
-    }
+    unsigned int x, y;
+    fscanf(board_file, "%u %u", &x, &y);
+    game->board = board_create(x, y);
 
     // Read the board line by line
     int tile = 0; 
-    for (unsigned int i = 0; i < game->board.board_size.y; ++i)
+    for (unsigned int i = 0; i < y; ++i)
     {
         // Catch the \n
         fgetc(board_file);
-        for (unsigned int j = 0; j < game->board.board_size.x; ++j)
+        for (unsigned int j = 0; j < x; ++j)
         {
             tile = fgetc(board_file);
             switch (tile)
             {
                 case ' ':
-                    game->board.board[j][i] = tile_empty;
+                    board_set_tile(game->board, j, i, tile_empty);
                 break;
 
                 case 'B':
-                    game->board.board[j][i] = tile_brick;
+                    board_set_tile(game->board, j, i, tile_brick);
                 break;
                 
                 default:
@@ -76,26 +71,14 @@ void read_board(Game* game, char* path)
     fclose(board_file);
 }
 
-// Clears out the board
-void clear_board(Game* game)
-{
-    for (unsigned int i = 0; i < game->board.board_size.x; ++i)
-    {
-        for (unsigned int j = 0; j < game->board.board_size.y; ++j)
-        {
-            clear_place(i, j);
-        }
-    }
-}
-
-// Draws the bricks, needs to run only once
+// Draws the bricks
 void draw_bricks(Game* game)
 {
-    for (unsigned int i = 0; i < game->board.board_size.x; ++i)
+    for (unsigned int i = 0; i < board_get_size_x(game->board); ++i)
     {
-        for (unsigned int j = 0; j < game->board.board_size.y; ++j)
+        for (unsigned int j = 0; j < board_get_size_y(game->board); ++j)
         {
-            if (game->board.board[i][j] == tile_brick)
+            if (board_get_tile(game->board, i, j) == tile_brick)
                 paint_brick(i, j);
         }
     }
@@ -119,8 +102,7 @@ int main (void)
     pthread_create(&connect_to_clients_thread, NULL, connect_to_clients, NULL);
 
     // Create the SDL window
-    create_board_window(game->board.board_size.x, game->board.board_size.x);
-
+    create_board_window(board_get_size_x(game->board), board_get_size_y(game->board));
 
     // Draw the board, just the tiles
     draw_bricks(game);
@@ -141,13 +123,13 @@ int main (void)
             }
 		}
 
-        
+        // Clear the board to render over
+        clear_board(board_get_size_x(game->board), board_get_size_y(game->board));
+        draw_bricks(game);
+        render_board();
 	}
 
     pthread_join(connect_to_clients_thread, NULL);
-
-
-
 
     return 0;
 }

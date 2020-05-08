@@ -46,7 +46,6 @@ void* connect_to_clients (void* a)
         fprintf(stdout, "Player [PLAYER_ID] connected!\n");
 
         // Thread to handle client communications
-        
     }
     
 }
