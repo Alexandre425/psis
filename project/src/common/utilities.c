@@ -16,6 +16,18 @@ void* malloc_check(size_t size)
     return ptr;
 }
 
+void* realloc_check(void* ptr, size_t size)
+{
+    void* new_ptr = realloc(ptr, size);
+    if (new_ptr == NULL)
+    {
+        perror("ERROR - Could not allocate memory");
+        exit(EXIT_FAILURE);
+    }
+    return new_ptr;
+}
+
+
 int send_all (int socket, void* buffer, size_t size)
 {
     char* ptr = (char*)buffer;
@@ -24,7 +36,9 @@ int send_all (int socket, void* buffer, size_t size)
     {
         size_t sent = send(socket, ptr, size, 0);
         if (sent == -1)
-            return -1;
+        {
+            perror("ERROR - Data send failed");
+        }
         // Update the data still to be sent
         ptr += sent;
         size -= sent;

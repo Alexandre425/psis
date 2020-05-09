@@ -5,10 +5,13 @@
 #include <SDL2/SDL.h>
 
 #include "server_connection.h"
+#include "server.h"
 #include "../common/UI_library.h"
 #include "../common/pacman.h"
 #include "../common/vector.h"
 #include "../common/utilities.h"
+
+pthread_mutex_t player_array_lock;
 
 typedef struct _Player
 {
@@ -18,6 +21,7 @@ typedef struct _Player
 
 } Player;
 
+
 typedef struct _Game
 {
     Board* board;
@@ -26,6 +30,69 @@ typedef struct _Game
     Player* players;
     Fruit* fruits;
 } Game;
+
+Player* player_find_by_id(Game* game, unsigned int player_id)
+{
+    for (unsigned int i = 0; i < game->n_players; ++i)
+    {
+        if (game->players[i].player_id == player_id)
+        {
+            return &game->players[i];
+        }
+    }
+    return NULL;
+}
+
+unsigned int player_create(Game* game)
+{
+    pthread_mutex_lock(&player_array_lock);
+    // If no players exist (array uninitialized)
+    if (!game->players)
+    {
+        game->n_players++;
+        game->players = malloc_check(sizeof(Player));
+    }
+    else
+    {
+        game->n_players++;
+        game->players = realloc_check(game->players, game->n_players * sizeof(Player));
+    }
+    // Default color (black)
+    game->players[game->n_players-1].color = 0x000000;
+    // Find an unused player_id
+    unsigned int player_id = 1;
+    while(player_find_by_id(game, player_id))
+    {
+        // Increment the ID if it is already in use
+        player_id++;
+    }
+    game->players[game->n_players-1].player_id = player_id;
+
+    // Put characters in a random position
+
+
+    pthread_mutex_unlock(&player_array_lock);
+
+    return player_id;
+}
+
+void player_destroy(Game* game, unsigned int player_id)
+{
+    pthread_mutex_lock(&player_array_lock);
+
+    // Find where the player is stored
+    Player* player = player_find_by_id(game, player_id);
+    
+    // Overwrite the player to be destroyed with the last player
+    memcpy(player, &game->players[game->n_players-1], sizeof(Player));
+
+    // Make the player array smaller
+    game->n_players--;
+    game->players = realloc_check(game->players, game->n_players * sizeof(Player));
+    
+    pthread_mutex_unlock(&player_array_lock);
+}
+
 
 // Reads the board file and initializes the board in the game struct
 void read_board(Game* game, char* path)
@@ -88,7 +155,15 @@ void draw_bricks(Game* game)
 int main (void)
 {
     // Initialize the game structure
+    // Initialized to zero due to the nature of malloc_check()
     Game* game = malloc_check(sizeof(Game));
+
+    // Initialize the mutex
+    if (pthread_mutex_init(&player_array_lock, NULL))
+    {
+        perror("ERROR - Mutex init failed");
+        exit(EXIT_FAILURE);
+    }
 
     // Read the board
     read_board(game, "board-drawer/board.txt");
@@ -99,7 +174,7 @@ int main (void)
 
     // Thread for handling incoming client connections
     pthread_t connect_to_clients_thread;
-    pthread_create(&connect_to_clients_thread, NULL, connect_to_clients, NULL);
+    pthread_create(&connect_to_clients_thread, NULL, connect_to_clients, (void*)game);
 
     // Create the SDL window
     create_board_window(board_get_size_x(game->board), board_get_size_y(game->board));

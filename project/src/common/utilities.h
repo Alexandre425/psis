@@ -8,8 +8,12 @@ typedef uint32_t Color; // Color stored in 0xRRGGBB format
 
 // Allocates, zeroes and checks SIZE bytes of memory
 void* malloc_check(size_t SIZE);
+// Reallocates memory at ptr to SIZE bytes and checks
+void* realloc_check(void* ptr, size_t SIZE);
+
 
 // Ensures all the data is sent
+// Also checks for errors, as
 // Returns 1 on success, -1 on error
 int send_all (int socket, void* buffer, size_t size);
 

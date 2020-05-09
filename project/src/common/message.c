@@ -4,6 +4,13 @@
 
 #include "message.h"
 
+void message_misaligned(void)
+{
+    puts("ERROR - Message misalignment detected");
+    exit(EXIT_FAILURE);
+}
+
+
 typedef struct __attribute__((__packed__)) _packed_color 
 {
     uint32_t color;

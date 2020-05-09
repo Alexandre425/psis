@@ -16,7 +16,12 @@
 // Unpacking an object does the exact opposite
 
 // Precedes every message, tells the server/client how to interpret the following bytes
-enum MessageType {message_terminator = -1, message_color, message_board, message_pacman, message_monster};
+typedef uint16_t MessageType;
+enum _MessageType {message_terminator = UINT16_MAX, message_color = 0, message_board, message_pacman_move, message_monster_move};
+
+// Ran when a misaligned message is detected in the receiving end
+void message_misaligned(void);
+
 
 // Network format of a color
 typedef struct _packed_color packed_Color;

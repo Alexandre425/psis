@@ -6,11 +6,29 @@
 #include <netinet/in.h>
 #include <assert.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
 
 #include "../common/UI_library.h"
 #include "../common/pacman.h"
 #include "client_connection.h"
 #include "client_message.h"
+
+typedef struct _Player
+{
+    unsigned int player_id;
+    Color color;
+    bool powered_up;
+    Vector* pacman_pos;
+    Vector* monster_pos;
+} Player;
+
+typedef struct _Game
+{
+    Board* board;
+    unsigned int n_players;
+    Player* players;
+    Fruit* fruits;
+} Game;
 
 int main (int argc, char* argv[])
 {
@@ -26,10 +44,10 @@ int main (int argc, char* argv[])
     // Read the color
     Color color;
     sscanf(argv[2], "%x", &color);
-    printf("%d %x", color, color);
 
     int server_socket = connect_to_server(ip_str, port_str);
 
+    message_send_color(server_socket, color);
 
     return 0;
 }

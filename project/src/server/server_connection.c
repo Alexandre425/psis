@@ -1,14 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <assert.h>
 
 #include "server_connection.h"
+#include "server_message.h"
+#include "server.h"
+#include "../common/message.h"
+#include "../common/utilities.h"
 
 #define PLACEHOLDER_PORT 25000
 
-void* connect_to_clients (void* a)
+typedef struct _client
+{
+    unsigned int player_id;
+    int socket;
+} Client;
+
+void* connect_to_clients (void* game)
 {
     // Create an unnamed INET socket
     int listen_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -43,9 +54,51 @@ void* connect_to_clients (void* a)
             exit(EXIT_FAILURE);
         }
 
-        fprintf(stdout, "Player [PLAYER_ID] connected!\n");
+        // Create a new client struct to pass to the receiver function
+        Client* client = malloc_check(sizeof(Client));
+        client->socket = client_socket;
+
+        // Create a new player
+        client->player_id = player_create(game);
+
+        fprintf(stdout, "Player %d connected!\n", client->player_id);
 
         // Thread to handle client communications
+        pthread_t recv_from_client_thread;
+        pthread_create(&recv_from_client_thread, NULL, recv_from_client, (void*)client);
     }
+}
+
+void* recv_from_client (void* _client)
+{
+    // Cast to Client
+    Client* client = (Client*)_client;
     
+    // Probe for new messages repeatedly
+    while (1)
+    {
+        // Determine message type
+        MessageType mt;
+        if (recv_all(client->socket, &mt, sizeof(MessageType)) == 0)
+        {
+            puts("Client left");
+            break;
+        }
+        // Use function respective to type
+        switch (ntohs(mt))
+        {
+        case message_color:
+        {
+            Color color;
+            message_recv_color(client->socket, &color);
+            printf("Received color %x from player %d\n", color, client->player_id);
+            break;
+        }
+        
+        default:
+            break;
+        }
+    }
+
+    return NULL;
 }
