@@ -7,6 +7,7 @@ typedef struct _Player Player;
 typedef struct _Game Game;
 
 
+
 // Creates a player and returns their player_id
 unsigned int player_create(Game* game);
 // Removes a player from the game

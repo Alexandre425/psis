@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <SDL2/SDL.h>
+#include <signal.h>
 
 #include "server_connection.h"
 #include "server.h"
@@ -204,6 +205,7 @@ int main (void)
         render_board();
 	}
 
+    pthread_kill(connect_to_clients_thread, SIGUSR1);    
     pthread_join(connect_to_clients_thread, NULL);
 
     return 0;

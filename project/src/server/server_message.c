@@ -22,5 +22,4 @@ void message_recv_color(int socket, Color* color)
     recv_all(socket, &mt, sizeof(Color));
     if (ntohs(mt) != message_terminator)
         message_misaligned();
-
 }
