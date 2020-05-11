@@ -12,6 +12,7 @@
 #include "../common/pacman.h"
 #include "client_connection.h"
 #include "client_message.h"
+#include "client.h"
 
 typedef struct _Player
 {
@@ -48,6 +49,10 @@ int main (int argc, char* argv[])
     int server_socket = connect_to_server(ip_str, port_str);
 
     message_send_color(server_socket, color);
+
+    getc(stdin);
+
+    shutdown(server_socket, SHUT_RDWR);
 
     return 0;
 }

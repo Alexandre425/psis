@@ -220,7 +220,11 @@ void render_board(void)
 
 void clear_board(int size_x, int size_y)
 {
-	for (unsigned int i; i < size_x; ++i)
-		for (unsigned int j; j < size_y; ++j)
+	for (unsigned int i = 0; i < size_x; ++i)
+	{
+		for (unsigned int j = 0; j < size_y; ++j)
+		{
 			clear_place(i, j);
+		}
+	}
 }

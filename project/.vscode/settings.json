@@ -5,6 +5,7 @@
         "utilities.h": "c",
         "client_message.h": "c",
         "stdlib.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "signal.h": "c"
     }
 }

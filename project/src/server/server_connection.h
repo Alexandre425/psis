@@ -7,5 +7,6 @@
 void* connect_to_clients (void* game);
 
 // Is in charge of receiving information from a single client
+// Receives a Client struct cast as void*
 // Threaded from connect_to_clients()
-void* recv_from_client (void* game);
+void* recv_from_client (void* client);

@@ -12,7 +12,7 @@ typedef struct _Board
     unsigned int** board;
 } Board;
 
-Board* board_create(int x, int y)
+Board* board_create(unsigned int x, unsigned int y)
 {
     Board* board = malloc_check(sizeof(Board));
     board->board_size = vec_create(x, y);
@@ -42,7 +42,7 @@ void board_destroy(Board* board)
     free(board);
 }
 
-void board_set_tile(Board* board, int x, int y, unsigned int value)
+void board_set_tile(Board* board, unsigned int x, unsigned int y, unsigned int value)
 {
     board->board[x][y] = value; 
 }
@@ -58,11 +58,25 @@ unsigned int board_get_size_y(Board* board)
     return vec_get_y(board->board_size);
 }
 
-unsigned int board_get_tile(Board* board, int x, int y)
+unsigned int board_get_tile(Board* board, unsigned int x, unsigned int y)
 {
     return board->board[x][y];
 }
 
+unsigned int board_tile_type_to_player_id(unsigned int tile_type)
+{
+    // Handles both pacman and monster due to integer division
+    return (tile_type - tile_last) / (int)2;
+}
+
+unsigned int board_player_id_to_tile_type(unsigned int player_id, int is_pacman)
+{
+    // player_ids are stored after the basic tiles, the last of which is tile_last
+    // for example, player 7's pacman would be represented as tile_last + 15
+    // their monster would be tile_last + 14
+    // this is unique to their player_id
+    return tile_last + (player_id*2) + is_pacman;
+}
 
 // A fruit's type and position
 typedef struct _Fruit

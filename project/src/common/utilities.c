@@ -5,6 +5,15 @@
 
 #include "utilities.h"
 
+void color_hex_to_rgb(Color color, unsigned int* r, unsigned int* g, unsigned int* b)
+{
+    // Bitwise and with the respective byte, make it the least significant byte
+    *b = (color & 0x0000FF) >> 0;
+    *g = (color & 0x00FF00) >> 8;
+    *r = (color & 0xFF0000) >> 16;
+}
+
+
 void* malloc_check(size_t size)
 {
     void* ptr = calloc(1, size);

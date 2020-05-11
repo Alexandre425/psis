@@ -43,3 +43,5 @@ int connect_to_server (char* server_ip, char* server_port)
 
     return server_socket;
 }
+
+void* recv_from_server(void* idk);

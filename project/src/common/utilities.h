@@ -6,6 +6,9 @@
 
 typedef uint32_t Color; // Color stored in 0xRRGGBB format
 
+// Converts a color in the hexadecimal format to the rgb format
+void color_hex_to_rgb(Color color, unsigned int* r, unsigned int* g, unsigned int* b);
+
 // Allocates, zeroes and checks SIZE bytes of memory
 void* malloc_check(size_t SIZE);
 // Reallocates memory at ptr to SIZE bytes and checks

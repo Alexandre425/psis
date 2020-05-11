@@ -17,12 +17,13 @@ const uint16_t PORT = 25000;
 
 typedef struct _client
 {
+    Game* game;
     unsigned int player_id;
     int socket;
 } Client;
 
 static unsigned int n_clients = 0;
-static pthread_t* client_array;
+static pthread_t* client_array = NULL;
 
 // Stores the new client's thread handler in the array
 static void client_store(pthread_t client_thread)
@@ -51,7 +52,6 @@ static void client_destroy(pthread_t client_thread)
             // Overwrite with last
             client_array[i] = client_array[n_clients - 1];
             n_clients--;
-            client_array = realloc_check(client_array, n_clients * sizeof(pthread_t));
             return;
         }
     }
@@ -132,10 +132,10 @@ void* connect_to_clients (void* game)
         // Create a new client struct to pass to the receiver function
         Client* client = malloc_check(sizeof(Client));
         client->socket = client_socket;
+        client->game = (Game*)game;
 
         // Create a new player
-        client->player_id = player_create(game);
-
+        client->player_id = player_create((Game*)game);
 
         fprintf(stdout, "Player %d connected!\n", client->player_id);
 
@@ -155,6 +155,8 @@ void* recv_from_client (void* _client)
 {
     // Cast to Client
     Client* client = (Client*)_client;
+
+    Player* player = player_find_by_id(client->game, client->player_id);
 
     // Handle the shutdown signal
     struct sigaction action;
@@ -197,6 +199,7 @@ void* recv_from_client (void* _client)
         {
             Color color;
             message_recv_color(client->socket, &color);
+            player_set_color(player, color);
             printf("Received color %x from player %d\n", color, client->player_id);
             break;
         }
@@ -206,6 +209,8 @@ void* recv_from_client (void* _client)
         }
     }
     
+    // Destroy the player who left
+    player_destroy(client->game, client->player_id);
     // Remove self from the client handler array
     client_destroy(pthread_self());
     // Terminate connection with client
