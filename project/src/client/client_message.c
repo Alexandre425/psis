@@ -13,14 +13,11 @@
 void message_send_color(int socket, Color color)
 {
     // Send the message type so the receiver can interpret it correctly
-    MessageType mt = htons(message_color);
-    send_all(socket, &mt, sizeof(MessageType));
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_COLOR);
 
     // Send the message itself
-    uint32_t net_color = htonl(color);
-    send_all(socket, &net_color, sizeof(uint32_t));
+    message_send_uint32_t(socket, (uint32_t)color);
 
     // Send the terminator to confirm end of message
-    mt = message_terminator;
-    send_all(socket, &mt, sizeof(MessageType));
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
 }

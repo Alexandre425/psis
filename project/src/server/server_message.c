@@ -13,13 +13,5 @@
 void message_recv_color(int socket, Color* color)
 {
     // Receive the data
-    uint32_t net_color;
-    recv_all(socket, &net_color, sizeof(Color));
-    *color = ntohl(net_color);
-
-    // Receive the terminator
-    MessageType mt;
-    recv_all(socket, &mt, sizeof(Color));
-    if (ntohs(mt) != message_terminator)
-        message_misaligned();
+    message_recv_uint32_t(socket, (uint32_t*)color);
 }

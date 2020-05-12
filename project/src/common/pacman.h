@@ -4,9 +4,9 @@
 
 // Defines structures pertaining to the game, that both the client and the server should recognize
 
-enum FruitType {fruit_lemon, fruit_cherry};
+enum FruitType {FRUIT_LEMON, FRUIT_CHERRY};
 
-enum TileType {tile_empty, tile_brick, tile_last};
+enum TileType {TILE_EMPTY, TILE_BRICK, TILE_LAST};
 
 // The game board
 typedef struct _Board Board;

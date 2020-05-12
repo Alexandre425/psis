@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <linux/tcp.h>
 #include <netinet/in.h>
 #include <assert.h>
 #include <arpa/inet.h>

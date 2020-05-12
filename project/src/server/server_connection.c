@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <sys/socket.h>
+#include <linux/tcp.h>
 #include <netinet/in.h>
 #include <assert.h>
 #include <errno.h>
@@ -114,7 +115,7 @@ void* connect_to_clients (void* game)
     {
         puts("Waiting for client");
         // Accept connections - blocks until a client connects
-        client_socket = accept(listen_socket, NULL, NULL);   // Client address is ignored
+        client_socket = accept(listen_socket, NULL, NULL);
         if (client_socket == -1)
         {
             // If accept was interrupted by a signal (means server is shutting down)
@@ -195,7 +196,7 @@ void* recv_from_client (void* _client)
         // Use function respective to type
         switch (ntohs(mt))
         {
-        case message_color:
+        case MESSAGE_COLOR:
         {
             Color color;
             message_recv_color(client->socket, &color);
@@ -207,6 +208,11 @@ void* recv_from_client (void* _client)
         default:
             break;
         }
+
+        // Receive the terminator
+        message_recv_uint16_t(client->socket, (uint16_t*)&mt);
+        if (mt != MESSAGE_TERMINATOR)
+            message_misaligned();
     }
     
     // Destroy the player who left

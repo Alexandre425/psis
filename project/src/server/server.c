@@ -80,7 +80,7 @@ unsigned int player_create(Game* game)
         x = rand() % max_x;
         y = rand() % max_y;
     }
-    while(board_get_tile(game->board, x, y) != tile_empty);
+    while(board_get_tile(game->board, x, y) != TILE_EMPTY);
     new_player->pacman_pos = vec_create(x, y);
     board_set_tile(game->board, x, y, board_player_id_to_tile_type(player_id, 1));
     do
@@ -88,7 +88,7 @@ unsigned int player_create(Game* game)
         x = rand() % max_x;
         y = rand() % max_y;
     }
-    while(board_get_tile(game->board, x, y) != tile_empty);
+    while(board_get_tile(game->board, x, y) != TILE_EMPTY);
     new_player->monster_pos = vec_create(x, y);
     board_set_tile(game->board, x, y, board_player_id_to_tile_type(player_id, 0));
 
@@ -105,8 +105,8 @@ void player_destroy(Game* game, unsigned int player_id)
     Player* player = player_find_by_id(game, player_id);
     
     // Clear the spaces on the board occupied by the pacman and monster
-    board_set_tile(game->board, vec_get_x(player->pacman_pos), vec_get_y(player->pacman_pos), tile_empty);
-    board_set_tile(game->board, vec_get_x(player->monster_pos), vec_get_y(player->monster_pos), tile_empty);
+    board_set_tile(game->board, vec_get_x(player->pacman_pos), vec_get_y(player->pacman_pos), TILE_EMPTY);
+    board_set_tile(game->board, vec_get_x(player->monster_pos), vec_get_y(player->monster_pos), TILE_EMPTY);
 
     // Free the position vectors
     free(player->pacman_pos);
@@ -162,12 +162,12 @@ static unsigned int read_board(Game* game, char* path)
             switch (tile)
             {
                 case ' ':
-                    board_set_tile(game->board, j, i, tile_empty);
+                    board_set_tile(game->board, j, i, TILE_EMPTY);
                     n_empty++;
                 break;
 
                 case 'B':
-                    board_set_tile(game->board, j, i, tile_brick);
+                    board_set_tile(game->board, j, i, TILE_BRICK);
                 break;
                 
                 default:
@@ -190,7 +190,7 @@ static void draw_bricks(Game* game)
     {
         for (unsigned int j = 0; j < board_get_size_y(game->board); ++j)
         {
-            if (board_get_tile(game->board, i, j) == tile_brick)
+            if (board_get_tile(game->board, i, j) == TILE_BRICK)
                 paint_brick(i, j);
         }
     }

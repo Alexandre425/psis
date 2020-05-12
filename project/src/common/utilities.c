@@ -47,6 +47,7 @@ int send_all (int socket, void* buffer, size_t size)
         if (sent == -1)
         {
             perror("ERROR - Data send failed");
+            return -1;
         }
         // Update the data still to be sent
         ptr += sent;
