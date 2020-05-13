@@ -33,6 +33,11 @@ typedef struct _Game
     Fruit* fruits;
 } Game;
 
+Board* game_get_board(Game* game)
+{
+    return game->board;
+}
+
 Player* player_find_by_id(Game* game, unsigned int player_id)
 {
     for (unsigned int i = 0; i < game->n_players; ++i)
@@ -243,7 +248,7 @@ int main (void)
 
     // Draw the board, just the tiles
     draw_bricks(game);
-    // Main poll and draw loop
+    // Poll and draw loop
     SDL_Event event;
     bool quit = false;
     while (!quit){
@@ -259,6 +264,11 @@ int main (void)
                 break;
             }
 		}
+
+        if (game->n_players)
+        {
+            send_to_all_clients(game, MESSAGE_BOARD);
+        }
 
         // Clear the board to render over
         clear_board(board_get_size_x(game->board), board_get_size_y(game->board));

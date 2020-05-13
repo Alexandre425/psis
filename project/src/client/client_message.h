@@ -6,3 +6,7 @@
 
 // Sends the player's color to the server
 void message_send_color(int socket, Color color);
+
+// Receives the game board from the server
+// Stores the pointer to the board in board
+void message_recv_board(int socket, Board** board);

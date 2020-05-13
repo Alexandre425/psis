@@ -31,6 +31,32 @@ typedef struct _Game
     Fruit* fruits;
 } Game;
 
+// Draws the bricks
+static void draw_bricks(Game* game)
+{
+    for (unsigned int i = 0; i < board_get_size_x(game->board); ++i)
+    {
+        for (unsigned int j = 0; j < board_get_size_y(game->board); ++j)
+        {
+            if (board_get_tile(game->board, i, j) == TILE_BRICK)
+                paint_brick(i, j);
+        }
+    }
+}
+
+// Draws the players
+static void draw_players(Game* game)
+{
+    for (unsigned int i = 0; i < game->n_players; ++i)
+    {
+        Player player = game->players[i];
+        unsigned int r, g, b;
+        color_hex_to_rgb(player.color, &r, &g, &b);
+        paint_pacman(vec_get_x(player.pacman_pos), vec_get_y(player.pacman_pos), r, g, b);
+        paint_monster(vec_get_x(player.monster_pos), vec_get_y(player.monster_pos), r, g, b);
+    }
+}
+
 int main (int argc, char* argv[])
 {
     // Verify correct argument usage
@@ -48,9 +74,38 @@ int main (int argc, char* argv[])
 
     int server_socket = connect_to_server(ip_str, port_str);
 
-    message_send_color(server_socket, color);
+    // Create the game struct
+    Game* game = malloc_check(sizeof(Game));
 
-    getc(stdin);
+    // Trade the initial necessary info with the server
+    message_send_color(server_socket, color);
+    message_recv_board(server_socket, &game->board);
+
+    create_board_window(board_get_size_x(game->board), board_get_size_y(game->board));
+
+    // Poll and draw loop
+    SDL_Event event;
+    bool quit = false;
+    while (!quit){
+		while (SDL_PollEvent(&event)) {
+            switch (event.type)
+            {
+            case SDL_QUIT:          // Quit the program when the window is closed
+                close_board_windows();
+                quit = true;
+                break;
+            
+            default:
+                break;
+            }
+		}
+
+        // Clear the board to render over
+        clear_board(board_get_size_x(game->board), board_get_size_y(game->board));
+        draw_bricks(game);
+        draw_players(game);
+        render_board();
+	}
 
     shutdown(server_socket, SHUT_RDWR);
 

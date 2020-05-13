@@ -21,3 +21,23 @@ void message_send_color(int socket, Color color)
     // Send the terminator to confirm end of message
     message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
 }
+
+void message_recv_board(int socket, Board** board)
+{
+    // Receive the size (x then y)
+    uint16_t size_x, size_y;
+    message_recv_uint16_t(socket, (uint16_t*)&size_x);
+    message_recv_uint16_t(socket, (uint16_t*)&size_y);
+    // Create the board
+    *board = board_create(size_x, size_y);
+    // Go line by line and receive the board's tiles sequentially, storing them
+    uint16_t tile;
+    for (unsigned int i = 0; i < size_y; ++i)
+    {
+        for (unsigned int j = 0; j < size_x; ++j)
+        {
+            message_recv_uint16_t(socket, (uint16_t*)&tile);
+            board_set_tile(*board, j, i, (unsigned int)tile);
+        }
+    }
+}

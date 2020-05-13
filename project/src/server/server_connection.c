@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
 #include <sys/socket.h>
 #include <linux/tcp.h>
@@ -10,8 +11,6 @@
 
 #include "server_connection.h"
 #include "server_message.h"
-#include "server.h"
-#include "../common/message.h"
 #include "../common/utilities.h"
 
 const uint16_t PORT = 25000;
@@ -19,36 +18,38 @@ const uint16_t PORT = 25000;
 typedef struct _client
 {
     Game* game;
+    pthread_t handler_thread;
     unsigned int player_id;
     int socket;
 } Client;
 
 static unsigned int n_clients = 0;
-static pthread_t* client_array = NULL;
+static Client** client_array = NULL;
 
-// Stores the new client's thread handler in the array
-static void client_store(pthread_t client_thread)
+// Stores the new client struct's pointer in the array
+static void client_store(Client* client)
 {
     // If first client
     if (!client_array)
     {
         n_clients++;
-        client_array = malloc_check(sizeof(pthread_t));
+        client_array = malloc_check(sizeof(Client*));
     }
     else
     {
         n_clients++;
-        client_array = realloc_check(client_array, n_clients * sizeof(pthread_t));
+        client_array = realloc_check(client_array, n_clients * sizeof(Client*));
     }
-    client_array[n_clients - 1] = client_thread;
+    client_array[n_clients - 1] = client;
 }
 
-// Removes a client's thread handler from the array
-static void client_destroy(pthread_t client_thread)
+// Removes a client's pointer from the array
+static void client_destroy(Client* client)
 {
     for (unsigned int i = 0; i < n_clients; ++i)
     {
-        if (client_thread == client_array[i])
+        // Compare the pointers
+        if (client == client_array[i])
         {
             // Overwrite with last
             client_array[i] = client_array[n_clients - 1];
@@ -66,7 +67,7 @@ void shutdown_handler(int unused)
 {
     for (unsigned int i = 0; i < n_clients; ++i)
     {
-        pthread_kill(client_array[i], SIGUSR1);
+        pthread_kill(client_array[i]->handler_thread, SIGUSR1);
     }
 }
 // Signal handler for the recv_from_client threads
@@ -143,7 +144,8 @@ void* connect_to_clients (void* game)
         // Thread to handle client communications
         pthread_t recv_from_client_thread;
         pthread_create(&recv_from_client_thread, NULL, recv_from_client, (void*)client);
-        client_store(recv_from_client_thread);
+        client->handler_thread = recv_from_client_thread;
+        client_store(client);
     }
 
     puts("close");
@@ -218,10 +220,30 @@ void* recv_from_client (void* _client)
     // Destroy the player who left
     player_destroy(client->game, client->player_id);
     // Remove self from the client handler array
-    client_destroy(pthread_self());
+    client_destroy(client);
     // Terminate connection with client
     shutdown(client->socket, SHUT_RDWR);
     free(client);
 
     return NULL;
+}
+
+void send_to_all_clients(Game* game, MessageType message_type)
+{
+    // For every client
+    for (unsigned int i = 0; i < n_clients; ++i)
+    {
+        // Send the message defined by message_type
+        switch (message_type)
+        {
+        case MESSAGE_BOARD:
+            message_send_board(client_array[i]->socket, game_get_board(game));
+            break;
+        
+        default:
+            break;
+        }
+
+    }
+
 }

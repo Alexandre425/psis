@@ -8,6 +8,8 @@ typedef struct _Player Player;
 
 typedef struct _Game Game;
 
+// Returns the game board
+Board* game_get_board(Game* game);
 
 
 // Creates a player and returns their player_id
