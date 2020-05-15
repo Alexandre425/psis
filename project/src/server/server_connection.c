@@ -13,6 +13,7 @@
 #include "server_message.h"
 #include "../common/utilities.h"
 
+pthread_mutex_t client_array_lock;
 const uint16_t PORT = 25000;
 
 typedef struct _client
@@ -29,6 +30,7 @@ static Client** client_array = NULL;
 // Stores the new client struct's pointer in the array
 static void client_store(Client* client)
 {
+    pthread_mutex_lock(&client_array_lock);
     // If first client
     if (!client_array)
     {
@@ -41,11 +43,14 @@ static void client_store(Client* client)
         client_array = realloc_check(client_array, n_clients * sizeof(Client*));
     }
     client_array[n_clients - 1] = client;
+    pthread_mutex_unlock(&client_array_lock);
+
 }
 
 // Removes a client's pointer from the array
 static void client_destroy(Client* client)
 {
+    pthread_mutex_lock(&client_array_lock);
     for (unsigned int i = 0; i < n_clients; ++i)
     {
         // Compare the pointers
@@ -54,6 +59,7 @@ static void client_destroy(Client* client)
             // Overwrite with last
             client_array[i] = client_array[n_clients - 1];
             n_clients--;
+            pthread_mutex_unlock(&client_array_lock);
             return;
         }
     }
@@ -87,6 +93,13 @@ void* connect_to_clients (void* game)
     if (sigaction(SIGUSR1, &action, NULL) == -1)
     {
         perror("ERROR - Could not assign signal handler");
+        exit(EXIT_FAILURE);
+    }
+
+    // Create the mutex for the client array
+    if (pthread_mutex_init(&client_array_lock, NULL))
+    {
+        perror("ERROR - Mutex init failed");
         exit(EXIT_FAILURE);
     }
 
@@ -230,6 +243,7 @@ void* recv_from_client (void* _client)
 
 void send_to_all_clients(Game* game, MessageType message_type)
 {
+    pthread_mutex_lock(&client_array_lock);
     // For every client
     for (unsigned int i = 0; i < n_clients; ++i)
     {
@@ -239,11 +253,14 @@ void send_to_all_clients(Game* game, MessageType message_type)
         case MESSAGE_BOARD:
             message_send_board(client_array[i]->socket, game_get_board(game));
             break;
-        
+        case MESSAGE_PLAYER_LIST:
+            message_send_player_list(client_array[i]->socket, game);
+            break;
+
         default:
             break;
         }
 
     }
-
+    pthread_mutex_unlock(&client_array_lock);
 }

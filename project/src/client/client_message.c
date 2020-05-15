@@ -22,6 +22,21 @@ void message_send_color(int socket, Color color)
     message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
 }
 
+void message_send_movement_pac(int socket, char movement_dir)
+{
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_MOVE_PAC);
+    message_send_char(socket, (char)movement_dir);
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
+}
+
+void message_send_movement_mon(int socket, char movement_dir)
+{
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_MOVE_MON);
+    message_send_char(socket, (char)movement_dir);
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
+}
+
+
 void message_recv_board(int socket, Board** board)
 {
     // Receive the size (x then y)

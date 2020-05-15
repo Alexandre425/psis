@@ -17,9 +17,14 @@ unsigned int player_create(Game* game);
 // Removes a player from the game
 void player_destroy(Game* game, unsigned int player_id);
 
+// Returns a player one by one, incrementing with each subsequent call
+Player* player_for_all_players(Game* game);
+// Returns a player's x position
+int player_get_pos_x(Player* player);
+
 // Sets a player's color
 void player_set_color(Player* player, Color color);
 
-// Returns a player struct by its ID
+// Returns a player struct pointer by its ID
 Player* player_find_by_id(Game* game, unsigned int player_id);
 

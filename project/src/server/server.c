@@ -29,7 +29,7 @@ typedef struct _Game
     Board* board;
     unsigned int max_players;
     unsigned int n_players;
-    Player* players;
+    Player** players;
     Fruit* fruits;
 } Game;
 
@@ -42,9 +42,9 @@ Player* player_find_by_id(Game* game, unsigned int player_id)
 {
     for (unsigned int i = 0; i < game->n_players; ++i)
     {
-        if (game->players[i].player_id == player_id)
+        if (game->players[i]->player_id == player_id)
         {
-            return &game->players[i];
+            return game->players[i];
         }
     }
     return NULL;
@@ -57,14 +57,15 @@ unsigned int player_create(Game* game)
     if (!game->players)
     {
         game->n_players++;
-        game->players = malloc_check(sizeof(Player));
+        game->players = malloc_check(sizeof(Player*));
     }
     else
     {
         game->n_players++;
-        game->players = realloc_check(game->players, game->n_players * sizeof(Player));
+        game->players = realloc_check(game->players, game->n_players * sizeof(Player*));
     }
-    Player* new_player = &game->players[game->n_players-1];
+    Player* new_player = malloc_check(sizeof(Player));
+    game->players[game->n_players-1] = new_player;
     // Default color (black)
     new_player->color = 0x000000;
     // Find an unused player_id
@@ -106,7 +107,7 @@ void player_destroy(Game* game, unsigned int player_id)
 {
     pthread_mutex_lock(&player_array_lock);
 
-    // Find where the player is stored
+    // Get the ptr to the player struct
     Player* player = player_find_by_id(game, player_id);
     
     // Clear the spaces on the board occupied by the pacman and monster
@@ -117,8 +118,11 @@ void player_destroy(Game* game, unsigned int player_id)
     free(player->pacman_pos);
     free(player->monster_pos);
 
-    // Overwrite the player to be destroyed with the last player
-    memcpy(player, &game->players[game->n_players-1], sizeof(Player));
+    // Free the player struct
+    free(player);
+
+    // Overwrite the player to be destroyed with the last player ptr
+    memcpy(&player, &game->players[game->n_players-1], sizeof(Player*));
 
     game->n_players--;
     // Not strictly necessary, but prevents a bug with player_create where
@@ -206,11 +210,11 @@ static void draw_players(Game* game)
 {
     for (unsigned int i = 0; i < game->n_players; ++i)
     {
-        Player player = game->players[i];
+        Player* player = game->players[i];
         unsigned int r, g, b;
-        color_hex_to_rgb(player.color, &r, &g, &b);
-        paint_pacman(vec_get_x(player.pacman_pos), vec_get_y(player.pacman_pos), r, g, b);
-        paint_monster(vec_get_x(player.monster_pos), vec_get_y(player.monster_pos), r, g, b);
+        color_hex_to_rgb(player->color, &r, &g, &b);
+        paint_pacman(vec_get_x(player->pacman_pos), vec_get_y(player->pacman_pos), r, g, b);
+        paint_monster(vec_get_x(player->monster_pos), vec_get_y(player->monster_pos), r, g, b);
     }
 }
 
@@ -268,6 +272,7 @@ int main (void)
         if (game->n_players)
         {
             send_to_all_clients(game, MESSAGE_BOARD);
+            send_to_all_clients(game, MESSAGE_PLAYER_LIST);
         }
 
         // Clear the board to render over
@@ -275,6 +280,9 @@ int main (void)
         draw_bricks(game);
         draw_players(game);
         render_board();
+
+        // ~ 60Hz server
+        SDL_Delay(16);
 	}
 
     pthread_kill(connect_to_clients_thread, SIGUSR1);    

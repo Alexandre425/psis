@@ -30,3 +30,8 @@ void message_send_board(int socket, Board* board)
         }
     }
 }
+
+void message_send_player_list(int socket, Game* game)
+{
+    
+}
