@@ -190,7 +190,7 @@ void* recv_from_client (void* _client)
     {
         // Determine message type
         MessageType mt;
-        int ret = recv_all(client->socket, &mt, sizeof(MessageType));
+        int ret = message_recv_uint16_t(client->socket, (uint16_t*)&mt);
         if (ret == 0)
         {
             fprintf(stdout, "Client %d left!\n", client->player_id);
@@ -209,7 +209,7 @@ void* recv_from_client (void* _client)
             }
         }
         // Use function respective to type
-        switch (ntohs(mt))
+        switch (mt)
         {
         case MESSAGE_COLOR:
         {

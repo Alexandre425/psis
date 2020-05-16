@@ -8,6 +8,8 @@
 // Implements functions that serialize data to be sent over the network
 
 // Precedes every message, tells the server/client how to interpret the following bytes
+// The send functions should send the message type, along with the terminator at the end
+// The type and terminator are not handled by the recv functions, and must be handled externally to allow correct selection of a recv function
 typedef uint16_t MessageType;
 enum _MessageType {
     // Terminates a message, used for checking allignment

@@ -20,7 +20,9 @@ typedef struct _Player
     Color color;
     bool powered_up;
     Vector* pacman_pos;
+    char pacman_move_dir;
     Vector* monster_pos;
+    char monster_move_dir;
 } Player;
 
 
@@ -48,6 +50,12 @@ Player* player_find_by_id(Game* game, unsigned int player_id)
         }
     }
     return NULL;
+}
+
+Player** game_get_player_array(Game* game, unsigned int* n_players)
+{
+    *n_players = game->n_players;
+    return game->players;
 }
 
 unsigned int player_create(Game* game)
@@ -137,9 +145,46 @@ void player_destroy(Game* game, unsigned int player_id)
     pthread_mutex_unlock(&player_array_lock);
 }
 
+unsigned int player_get_id(Player* player)
+{
+    return player->player_id;
+}
+int player_get_pac_pos_x(Player* player)
+{
+    return vec_get_x(player->pacman_pos);
+}
+int player_get_pac_pos_y(Player* player)
+{
+    return vec_get_y(player->pacman_pos);
+}
+int player_get_mon_pos_x(Player* player)
+{
+    return vec_get_x(player->monster_pos);
+}
+int player_get_mon_pos_y(Player* player)
+{
+    return vec_get_y(player->monster_pos);
+}
+Color player_get_color(Player* player)
+{
+    return player->color;
+}
+bool player_get_power_up_state(Player* player)
+{
+    return player->powered_up;
+}
+
 void player_set_color(Player* player, Color color)
 {
     player->color = color;
+}
+void player_set_pac_move_dir(Player* player, char move_dir)
+{
+    player->pacman_move_dir = move_dir;
+}
+void player_set_mon_move_dir(Player* player, char move_dir)
+{
+    player->monster_move_dir = move_dir;
 }
 
 
