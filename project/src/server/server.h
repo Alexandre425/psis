@@ -37,7 +37,9 @@ bool player_get_power_up_state(Player* player);
 
 // Sets a player's color
 void player_set_color(Player* player, Color color);
+void player_set_pac_move_dir(Player* player, char move_dir);
+void player_set_mon_move_dir(Player* player, char move_dir);
 
-// Returns a player struct pointer by its ID
+// Returns a player struct by its ID, or NULL if it does not exist
 Player* player_find_by_id(Game* game, unsigned int player_id);
 

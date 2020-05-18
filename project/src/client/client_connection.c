@@ -5,8 +5,13 @@
 #include <netinet/in.h>
 #include <assert.h>
 #include <arpa/inet.h>
+#include <errno.h>
 
+#include "client.h"
 #include "client_connection.h"
+#include "client_message.h"
+
+#include "../common/message.h"
 
 int connect_to_server (char* server_ip, char* server_port)
 {
@@ -45,4 +50,64 @@ int connect_to_server (char* server_ip, char* server_port)
     return server_socket;
 }
 
-void* recv_from_server(void* idk);
+void* recv_from_server(void* _game)
+{
+    // Cast to game
+    Game* game = (Game*)_game;
+    int server_socket = game_get_server_socket(game);
+
+    // Probe for new messages
+    while (1)
+    {
+        // Determine message type
+        MessageType mt;
+        int ret = message_recv_uint16_t(server_socket, (uint16_t*)&mt);
+        if (ret == 0)
+        {
+            puts("Server closed!");
+            break;
+        }
+        else if (ret == -1)
+        {
+            if (errno == EINTR)
+            {
+                break;
+            }
+            else
+            {
+                perror("ERROR - Could not receive data");
+                exit(EXIT_FAILURE);
+            }
+        }
+        switch (mt)
+        {
+        case MESSAGE_BOARD:
+        {
+            Board* board;
+            message_recv_board(server_socket, &board);
+            game_set_board(game, board);
+            break;
+        }
+        case MESSAGE_PLAYER_LIST:
+        {
+            message_recv_player_list(server_socket, game);
+            break;
+        }
+        case MESSAGE_PLAYER_ID:
+        {
+            unsigned int player_id;
+            message_recv_player_id(server_socket, &player_id);
+            game_set_player_id(game, player_id);
+        }
+        
+        default:
+            break;
+        }
+
+        // Receive the terminator
+        message_recv_uint16_t(server_socket, (uint16_t*)&mt);
+        if (mt != MESSAGE_TERMINATOR)
+            message_misaligned();
+    }
+    return NULL;
+}

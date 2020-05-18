@@ -14,12 +14,13 @@ void* malloc_check(size_t SIZE);
 // Reallocates memory at ptr to SIZE bytes and checks
 void* realloc_check(void* ptr, size_t SIZE);
 
+// Returns the absolute value of an integer
+int abs_int(int value);
 
 // Ensures all the data is sent
 // Also checks for errors, as
 // Returns 1 on success, -1 on error
 int send_all (int socket, void* buffer, size_t size);
-
 // Ensures all the data is received
 // Returns 1 on success, 0 on close, -1 on error
 int recv_all (int socket, void* buffer, size_t size);

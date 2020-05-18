@@ -36,6 +36,14 @@ void* realloc_check(void* ptr, size_t size)
     return new_ptr;
 }
 
+int abs_int(int value)
+{
+    if (value >= 0)
+        return value;
+    else
+        return -value;
+}
+
 
 int send_all (int socket, void* buffer, size_t size)
 {

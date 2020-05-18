@@ -1,15 +1,12 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <pthread.h>
 #include <SDL2/SDL.h>
 #include <string.h>
 #include <netinet/in.h>
 #include <assert.h>
 #include <arpa/inet.h>
-#include <stdbool.h>
 
 #include "../common/UI_library.h"
-#include "../common/pacman.h"
 #include "client_connection.h"
 #include "client_message.h"
 #include "client.h"
@@ -25,11 +22,129 @@ typedef struct _Player
 
 typedef struct _Game
 {
+    int server_socket;
+    unsigned int player_id;
     Board* board;
     unsigned int n_players;
-    Player* players;
+    Player** players;
     Fruit* fruits;
 } Game;
+
+int game_get_server_socket(Game* game)
+{
+    return game->server_socket;
+}
+Board* game_get_board(Game* game)
+{
+    return game->board;
+}
+
+void game_set_player_id(Game* game, unsigned int player_id)
+{
+    game->player_id = player_id;
+}
+void game_set_board(Game* game, Board* board)
+{
+    game->board = board;
+}
+
+Player* player_find_by_id(Game* game, unsigned int player_id)
+{
+    for (unsigned int i = 0; i < game->n_players; ++i)
+    {
+        if (game->players[i]->player_id == player_id)
+        {
+            return game->players[i];
+        }
+    }
+    return NULL;
+}
+
+Player** game_get_player_array(Game* game, unsigned int* n_players)
+{
+    *n_players = game->n_players;
+    return game->players;
+}
+
+Player* player_create(Game* game, unsigned int player_id)
+{
+    // If no players exist (array uninitialized)
+    if (!game->players)
+    {
+        game->n_players++;
+        game->players = malloc_check(sizeof(Player*));
+    }
+    else
+    {
+        game->n_players++;
+        game->players = realloc_check(game->players, game->n_players * sizeof(Player*));
+    }
+    Player* new_player = malloc_check(sizeof(Player));
+    game->players[game->n_players-1] = new_player;
+    // Default color (black)
+    new_player->color = 0x000000;
+    // Assign the player_id
+    new_player->player_id = player_id;
+
+    // Put the characters in an invalid position (to be set later)
+    new_player->pacman_pos = vec_create(-1, -1);
+    new_player->monster_pos = vec_create(-1, -1);
+
+    return new_player;
+}
+
+void player_destroy(Game* game, unsigned int player_id)
+{
+    // Get the ptr to the player struct
+    Player* player = player_find_by_id(game, player_id);
+
+    // Free the position vectors
+    free(player->pacman_pos);
+    free(player->monster_pos);
+
+    // Free the player struct
+    free(player);
+
+    // Overwrite the player to be destroyed with the last player ptr
+    memcpy(&player, &game->players[game->n_players-1], sizeof(Player*));
+
+    game->n_players--;
+    // Not strictly necessary, but prevents a bug with player_create where
+    // the second client joining an empty server gets assigned player_id 2
+    // instead of 1 (as the array still contains the data after the realloc)
+    if (game->n_players == 0)
+    {
+        free(game->players);
+        game->players = NULL;
+    }
+}
+
+int player_get_pac_pos_x(Player* player)
+{
+    return vec_get_x(player->pacman_pos);
+}
+int player_get_pac_pos_y(Player* player)
+{
+    return vec_get_y(player->pacman_pos);
+}
+
+void player_set_pac_pos(Player* player, int x, int y)
+{
+    vec_set(player->pacman_pos, x, y);
+}
+void player_set_mon_pos(Player* player, int x, int y)
+{
+    vec_set(player->monster_pos, x, y);
+}
+void player_set_color(Player* player, Color color)
+{
+    player->color = color;
+}
+void player_set_power_up_state(Player* player, bool state)
+{
+    player->powered_up = state;
+}
+
 
 // Draws the bricks
 static void draw_bricks(Game* game)
@@ -49,11 +164,11 @@ static void draw_players(Game* game)
 {
     for (unsigned int i = 0; i < game->n_players; ++i)
     {
-        Player player = game->players[i];
+        Player* player = game->players[i];
         unsigned int r, g, b;
-        color_hex_to_rgb(player.color, &r, &g, &b);
-        paint_pacman(vec_get_x(player.pacman_pos), vec_get_y(player.pacman_pos), r, g, b);
-        paint_monster(vec_get_x(player.monster_pos), vec_get_y(player.monster_pos), r, g, b);
+        color_hex_to_rgb(player->color, &r, &g, &b);
+        paint_pacman(vec_get_x(player->pacman_pos), vec_get_y(player->pacman_pos), r, g, b);
+        paint_monster(vec_get_x(player->monster_pos), vec_get_y(player->monster_pos), r, g, b);
     }
 }
 
@@ -124,7 +239,7 @@ static void update_key(char* wasd_stack, unsigned int* wasd_pressed, unsigned in
 }
 
 // Handles the user input and sends movement intent to the server
-static void handle_user_input(int server_socket, SDL_Event event)
+static void handle_user_input(int server_socket, Game* game ,SDL_Event event)
 {
     // This part handles the movement for the monster, that is controlled with WASD
 
@@ -157,6 +272,21 @@ static void handle_user_input(int server_socket, SDL_Event event)
         update_key(wasd_stack, wasd_pressed, &n_pressed, 'd', keys_pressed[SDL_SCANCODE_D]);
     }
 
+    // The monster's last and current movement directions
+    static char last_move_mon = (char)-1;
+    static char curr_move_mon = (char)-1;
+    // Update the current movement direction
+    if (n_pressed)                                      // If any keys are pressed, movement is the last pressed key
+        curr_move_mon =  wasd_stack[n_pressed - 1];
+    else                                                // Otherwise the monster stops
+        curr_move_mon = (char)0;
+    // If there is a new movement direction (different from the last one sent)
+    if (curr_move_mon != last_move_mon)
+    {
+        message_send_movement_mon(server_socket, curr_move_mon);
+        last_move_mon = curr_move_mon;
+    }
+    
     // This part handles the movement for the Pacman, that is controlled with the mouse
 
     static char last_move_pac = -1;
@@ -166,19 +296,41 @@ static void handle_user_input(int server_socket, SDL_Event event)
     if (SDL_GetMouseState(&mouse_x, &mouse_y) & SDL_BUTTON(SDL_BUTTON_LEFT))
     {
         get_board_place(mouse_x, mouse_y, &board_x, &board_y);
-
+        Player* player = player_find_by_id(game, game->player_id);
+        int pac_x = player_get_pac_pos_x(player), pac_y = player_get_pac_pos_y(player);
+        // Compute the distance between the pacman and the tile the mouse points to
+        // The pacman will move in the direction which shows the biggest discrepancy, or not move if null distance
+        if (board_x == pac_x && board_y == pac_y)                       // If the mouse is over the pacman
+        {
+            curr_move_pac = (char)0;
+        }
+        else if (abs_int(board_x - pac_x) > abs_int(board_y - pac_y))   // If further in the x direction
+        {
+            if (board_x > pac_x)
+                curr_move_pac = 'd';
+            else
+                curr_move_pac = 'a';
+        }
+        else                                                            // If further in the y direction
+        {
+            if (board_y > pac_y)
+                curr_move_pac = 's';
+            else
+                curr_move_pac = 'w';
+        }
     }
     else
     {
-        
+        // Tell the server to stop the pacman
+        curr_move_pac = (char)0;
     }
-    // Pacman's movement intent during the previous frame
-    // If there is anything on the stack
-    if (n_pressed > 0)
-    {
 
+    // If there is a new movement direction
+    if (curr_move_pac != last_move_pac)
+    {
+        message_send_movement_pac(server_socket, curr_move_pac);
+        last_move_pac = curr_move_pac;
     }
-        
 }
 
 int main (int argc, char* argv[])
@@ -196,14 +348,23 @@ int main (int argc, char* argv[])
     Color color;
     sscanf(argv[2], "%x", &color);
 
+    // Connect to the server and send the color
     int server_socket = connect_to_server(ip_str, port_str);
+    message_send_color(server_socket, color);
 
     // Create the game struct
     Game* game = malloc_check(sizeof(Game));
+    game->server_socket = server_socket;
 
-    // Trade the initial necessary info with the server
-    message_send_color(server_socket, color);
-    message_recv_board(server_socket, &game->board);
+    // Thread to handle incoming messages from the server
+    pthread_t recv_from_server_thread;
+    pthread_create(&recv_from_server_thread, NULL, recv_from_server, (void*)game);
+
+    // Wait for the board and players to be received from the server (happens in another thread)
+    // Will probably burn lots of CPU cycles but hey, it only happens once 
+    // And saves me the headache of setting up pthread_cond_wait()
+    while (!game->board || !game->players)
+    {}
 
     create_board_window(board_get_size_x(game->board), board_get_size_y(game->board));
 
@@ -223,7 +384,7 @@ int main (int argc, char* argv[])
             }
 		}
 
-        handle_user_input(server_socket, event);
+        handle_user_input(server_socket, game, event);
         // Clear the board to render over
         clear_board(board_get_size_x(game->board), board_get_size_y(game->board));
         draw_bricks(game);

@@ -7,9 +7,12 @@
 
 // Receives the player's color from a client
 void message_recv_color(int socket, Color* color);
+// Receives the player's intended movement direction (for the monster OR the pacman, depends on the MessageType) from a client
+void message_recv_movement(int socket, char* movement_dir);
 
+// Sends a client their own player ID
+void message_send_player_id(int socket, unsigned int player_id);
 // Sends game the board to a client
 void message_send_board(int socket, Board* board);
-
 // Sends the list of players to a client
 void message_send_player_list(int socket, Game* game);

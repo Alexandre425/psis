@@ -154,6 +154,9 @@ void* connect_to_clients (void* game)
 
         fprintf(stdout, "Player %d connected!\n", client->player_id);
 
+        // Send the client their player ID
+        message_send_player_id(client->socket, client->player_id);
+
         // Thread to handle client communications
         pthread_t recv_from_client_thread;
         pthread_create(&recv_from_client_thread, NULL, recv_from_client, (void*)client);
@@ -216,10 +219,24 @@ void* recv_from_client (void* _client)
             Color color;
             message_recv_color(client->socket, &color);
             player_set_color(player, color);
-            printf("Received color %x from player %d\n", color, client->player_id);
             break;
         }
-        
+        case MESSAGE_MOVE_PAC:
+        {
+            char move_dir;
+            message_recv_movement(client->socket, (char*)&move_dir);
+            player_set_pac_move_dir(player, move_dir);
+            printf("Received movement dir %c from player %d\n", move_dir, client->player_id);
+            break;
+        }
+        case MESSAGE_MOVE_MON:
+        {
+            char move_dir;
+            message_recv_movement(client->socket, (char*)&move_dir);
+            player_set_mon_move_dir(player, move_dir);
+            printf("Received movement dir %c from player %d\n", move_dir, client->player_id);
+            break;
+        }        
         default:
             break;
         }

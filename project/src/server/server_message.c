@@ -16,6 +16,19 @@ void message_recv_color(int socket, Color* color)
     message_recv_uint32_t(socket, (uint32_t*)color);
 }
 
+void message_recv_movement(int socket, char* movement_dir)
+{
+    message_recv_char(socket, (char*)movement_dir);
+}
+
+void message_send_player_id(int socket, unsigned int player_id)
+{
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_PLAYER_ID);
+    message_send_uint32_t(socket, (uint32_t)player_id);
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
+}
+
+
 void message_send_board(int socket, Board* board)
 {
     // Send the message type
