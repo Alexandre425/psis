@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <SDL2/SDL.h>
 #include <string.h>
@@ -361,10 +362,9 @@ int main (int argc, char* argv[])
     pthread_create(&recv_from_server_thread, NULL, recv_from_server, (void*)game);
 
     // Wait for the board and players to be received from the server (happens in another thread)
-    // Will probably burn lots of CPU cycles but hey, it only happens once 
-    // And saves me the headache of setting up pthread_cond_wait()
+    // Burns a couple of cycles, but its better than pointlessly learning pthread_cond_wait() for one thing
     while (!game->board || !game->players)
-    {}
+        usleep(1000);
 
     create_board_window(board_get_size_x(game->board), board_get_size_y(game->board));
 

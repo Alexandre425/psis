@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <time.h>
 
 // Random useful functions, defs and structs
 
@@ -16,6 +17,10 @@ void* realloc_check(void* ptr, size_t SIZE);
 
 // Returns the absolute value of an integer
 int abs_int(int value);
+
+// Calculates the difference between two timespec structs
+// Returns the result in miliseconds
+int time_diff_ms(struct timespec then, struct timespec now);
 
 // Ensures all the data is sent
 // Also checks for errors, as

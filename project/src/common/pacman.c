@@ -42,7 +42,7 @@ void board_destroy(Board* board)
     free(board);
 }
 
-void board_set_tile(Board* board, unsigned int x, unsigned int y, unsigned int value)
+void board_set_tile(Board* board, int x, int y, unsigned int value)
 {
     board->board[x][y] = value; 
 }
@@ -58,15 +58,18 @@ unsigned int board_get_size_y(Board* board)
     return vec_get_y(board->board_size);
 }
 
-unsigned int board_get_tile(Board* board, unsigned int x, unsigned int y)
+unsigned int board_get_tile(Board* board, int x, int y)
 {
-    return board->board[x][y];
+    if (board_is_oob(board, x, y))
+        return TILE_INVALID;
+    else
+        return board->board[x][y];
 }
 
 unsigned int board_tile_type_to_player_id(unsigned int tile_type)
 {
     // Handles both pacman and monster due to integer division
-    return (tile_type - TILE_LAST) / (int)2;
+    return (tile_type - TILE_INVALID) / (int)2;
 }
 
 unsigned int board_player_id_to_tile_type(unsigned int player_id, int is_pacman)
@@ -75,7 +78,16 @@ unsigned int board_player_id_to_tile_type(unsigned int player_id, int is_pacman)
     // for example, player 7's pacman would be represented as tile_last + 15
     // their monster would be tile_last + 14
     // this is unique to their player_id
-    return TILE_LAST + (player_id*2) + is_pacman;
+    return TILE_INVALID + (player_id*2) + is_pacman;
+}
+
+int board_is_oob(Board* board, int x, int y)
+{
+    int size_x = board_get_size_x(board), size_y = board_get_size_y(board);
+    if (x >= 0 && x < size_x && y >= 0 && y < size_y)
+        return 0;
+    else
+        return 1;
 }
 
 // A fruit's type and position

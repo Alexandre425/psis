@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <SDL2/SDL.h>
 #include <signal.h>
+#include <time.h>
 
 #include "server_connection.h"
 #include "server.h"
@@ -21,8 +22,10 @@ typedef struct _Player
     bool powered_up;
     Vector* pacman_pos;
     char pacman_move_dir;
+    struct timespec pacman_last_move_time;
     Vector* monster_pos;
     char monster_move_dir;
+    struct timespec monster_last_move_time;
 } Player;
 
 
@@ -105,6 +108,10 @@ unsigned int player_create(Game* game)
     while(board_get_tile(game->board, x, y) != TILE_EMPTY);
     new_player->monster_pos = vec_create(x, y);
     board_set_tile(game->board, x, y, board_player_id_to_tile_type(player_id, 0));
+
+    // Initialize the move timer
+    clock_gettime(CLOCK_MONOTONIC, &new_player->monster_last_move_time);
+    clock_gettime(CLOCK_MONOTONIC, &new_player->pacman_last_move_time);
 
     pthread_mutex_unlock(&player_array_lock);
 
@@ -263,6 +270,114 @@ static void draw_players(Game* game)
     }
 }
 
+// Determines the target coordinates of a character 
+// Translates between wasd and up left down right
+// tgt_x and y should be set to the current tile, but will be modified to the target tile
+static void get_target_tile(int* tgt_x, int* tgt_y, char direction)
+{
+    switch (direction)
+    {
+    case 'w':
+        *tgt_y = *tgt_y - 1;
+        break;
+    case 'a':
+        *tgt_x = *tgt_x - 1;
+        break;
+    case 's':
+        *tgt_y = *tgt_y + 1;
+        break;
+    case 'd':
+        *tgt_x = *tgt_x + 1;
+        break;
+    default:
+        break;
+    }
+}
+
+// Same as above, but the opposite direction
+// Used for bouncing back from the wall
+static void get_opposite_target_tile(int* tgt_x, int* tgt_y, char direction)
+{
+    switch (direction)
+    {
+    case 'w':
+        *tgt_y = *tgt_y + 1;
+        break;
+    case 'a':
+        *tgt_x = *tgt_x + 1;
+        break;
+    case 's':
+        *tgt_y = *tgt_y - 1;
+        break;
+    case 'd':
+        *tgt_x = *tgt_x - 1;
+        break;
+    default:
+        break;
+    }
+}
+
+// Handles movement for the pacman
+static void handle_pacman_move(Game* game, Player* player, int tgt_x, int tgt_y)
+{
+    int curr_x = vec_get_x(player->pacman_pos), curr_y = vec_get_y(player->pacman_pos); // The current position
+    unsigned int tile = board_get_tile(game->board, tgt_x, tgt_y);
+    if (board_is_oob(game->board, tgt_x, tgt_y))        // If the target is OOB (out of bounds)
+        tile = TILE_BRICK;                              // Handle collisions as if the target is a brick (bounce back)
+    switch (tile)
+    {
+    case TILE_EMPTY:            // Simply move into the empty tile
+        board_set_tile(game->board, tgt_x, tgt_y, board_get_tile(game->board, curr_x, curr_y)); // Move the pacman in the board
+        vec_set(player->pacman_pos, tgt_x, tgt_y);                                              // and in the player struct
+        board_set_tile(game->board, curr_x, curr_y, TILE_EMPTY);                                // Empty the tile behind it
+        clock_gettime(CLOCK_MONOTONIC, &player->pacman_last_move_time);                         // Update the last move time
+        break;
+
+    case TILE_BRICK:            // Bounce back (if able)
+        tgt_x = curr_x; tgt_y = curr_y;
+        get_opposite_target_tile(&tgt_x, &tgt_y, player->pacman_move_dir);  // Invert the movement direction
+        if (board_is_oob(game->board, tgt_x, tgt_y) || board_get_tile(game->board, tgt_x, tgt_y) == TILE_BRICK);    // If the new target tile is OOB or a brick
+            // Stay in place, do nothing
+        else
+            handle_pacman_move(game, player, tgt_x, tgt_y); // Handle the new target tile
+        break;
+
+    default:
+        break;
+    }
+}
+// Handles movement for the monster
+static void handle_monster_move(Game* game, Player* player, int tgt_x, int tgt_y)
+{
+    
+}
+
+// Moves the characters, their interactions, handles fruit spawning and all things Pacman related
+static void game_update(Game* game)
+{
+    // Move the characters if enough time has passed
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    for (unsigned int i = 0; i < game->n_players; ++i)
+    {
+        Player* player = game->players[i];
+        if (time_diff_ms(player->monster_last_move_time, now) > 500 && player->monster_move_dir != (char)0) // If the last movement happened more than 500ms ago
+        {                                                                                                   // and the monster wants to move
+            int tgt_x = vec_get_x(player->monster_pos), tgt_y = vec_get_y(player->monster_pos); // Get the current position
+            get_target_tile(&tgt_x, &tgt_y, player->monster_move_dir);                          // Get the target position
+
+            handle_monster_move(game, player, tgt_x, tgt_y);
+        }
+        if (time_diff_ms(player->pacman_last_move_time, now) > 500 && player->pacman_move_dir != (char)0)   // Same as above with pacman
+        {
+            int tgt_x = vec_get_x(player->pacman_pos), tgt_y = vec_get_y(player->pacman_pos);   // Get the current position
+            get_target_tile(&tgt_x, &tgt_y, player->pacman_move_dir);                           // Get the target position
+
+            handle_pacman_move(game, player, tgt_x, tgt_y);
+        }
+    }
+}
+
 int main (void)
 {
     // Initialize the game structure
@@ -301,6 +416,9 @@ int main (void)
     SDL_Event event;
     bool quit = false;
     while (!quit){
+        struct timespec frame_begin;
+        clock_gettime(CLOCK_MONOTONIC, &frame_begin);
+
 		while (SDL_PollEvent(&event)) {
             switch (event.type)
             {
@@ -313,7 +431,11 @@ int main (void)
                 break;
             }
 		}
+        
+        // Run a game tick
+        game_update(game);
 
+        // Update the clients (if there are any)
         if (game->n_players)
         {
             send_to_all_clients(game, MESSAGE_BOARD);
@@ -327,7 +449,9 @@ int main (void)
         render_board();
 
         // ~ 60Hz server
-        SDL_Delay(16);
+        struct timespec frame_end;
+        clock_gettime(CLOCK_MONOTONIC, &frame_end);
+        SDL_Delay(17 - time_diff_ms(frame_begin, frame_end));
 	}
 
     pthread_kill(connect_to_clients_thread, SIGUSR1);    

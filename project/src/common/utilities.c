@@ -44,6 +44,13 @@ int abs_int(int value)
         return -value;
 }
 
+int time_diff_ms(struct timespec then, struct timespec now)
+{
+    int time_diff = 1000 * (now.tv_sec - then.tv_sec);
+    time_diff += (now.tv_nsec - then.tv_nsec) / 1000000;
+    return time_diff;
+}
+
 
 int send_all (int socket, void* buffer, size_t size)
 {

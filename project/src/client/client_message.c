@@ -72,25 +72,25 @@ void message_recv_player_list(int socket, Game* game)
     // For every player
     for (unsigned int i = 0; i < n_players; ++i)
     {
-        unsigned int player_id;
-        message_recv_uint16_t(socket, (uint16_t*)&player_id);
-        Player* player = player_find_by_id(game, player_id);
+        uint16_t player_id;
+        message_recv_uint16_t(socket, (uint16_t*)&player_id);   // Receive the player ID
+        Player* player = player_find_by_id(game, (unsigned int)player_id);
         // If the player doesn't exists in the client's memory
         if (!player)
         {
             player = player_create(game, player_id);
         }
-        Color color;                                        // Receive the color
+        Color color;                                            // Receive the color
         message_recv_uint32_t(socket, (uint32_t*)&color);
         player_set_color(player, color);
-        int x, y;                                           // The pacman and monster positions
+        int x, y;                                               // The pacman and monster positions
         message_recv_uint32_t(socket, (uint32_t*)&x);
         message_recv_uint32_t(socket, (uint32_t*)&y);
         player_set_pac_pos(player, x, y);
         message_recv_uint32_t(socket, (uint32_t*)&x);
         message_recv_uint32_t(socket, (uint32_t*)&y);
         player_set_mon_pos(player, x, y);   
-        bool powered_up;                                    // The power up state
+        bool powered_up;                                        // The power up state
         message_recv_char(socket, (char*)&powered_up);
         player_set_power_up_state(player, powered_up);
     }
