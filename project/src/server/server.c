@@ -89,23 +89,12 @@ unsigned int player_create(Game* game)
     new_player->player_id = player_id;
 
     // Put characters in a random position
-    unsigned int max_x = board_get_size_x(game->board);
-    unsigned int max_y = board_get_size_y(game->board);
-    unsigned int x, y;
-    do
-    {
-        x = rand() % max_x;
-        y = rand() % max_y;
-    }
-    while(board_get_tile(game->board, x, y) != TILE_EMPTY);
+    int x, y;
+    board_random_empty_space(game->board, &x, &y);  // Pacman
     new_player->pacman_pos = vec_create(x, y);
     board_set_tile(game->board, x, y, board_player_id_to_tile_type(player_id, 1));
-    do
-    {
-        x = rand() % max_x;
-        y = rand() % max_y;
-    }
-    while(board_get_tile(game->board, x, y) != TILE_EMPTY);
+
+    board_random_empty_space(game->board, &x, &y);  // Monster
     new_player->monster_pos = vec_create(x, y);
     board_set_tile(game->board, x, y, board_player_id_to_tile_type(player_id, 0));
 
@@ -317,6 +306,55 @@ static void get_opposite_target_tile(int* tgt_x, int* tgt_y, char direction)
     }
 }
 
+// Handles a character eating another
+// Parameters are the coordinates of the eater and eaten characters
+// If the eater is moving (i.g. Pacman with teeth moves into an enemy monster), eater_is_moving should be 1
+// Otherwise (i.g. regular Pacman moves into an enemy monster) it should be 0
+static void handle_character_eat(Game* game, int eater_x, int eater_y, int eaten_x, int eaten_y, int eater_is_moving)
+{
+    int res_x, res_y;
+    if (eater_is_moving)
+    {
+        unsigned int eaten_tile = board_get_tile(game->board, eaten_x, eaten_y);
+        unsigned int eater_tile = board_get_tile(game->board, eater_x, eater_y);
+        board_set_tile(game->board, eater_x, eater_y, TILE_EMPTY);  // Mark the eater's tile as a valid random tile to respawn in
+        board_random_empty_space(game->board, &res_x, &res_y);      // Determine the random respawn position
+        Player* eaten_player = player_find_by_id(game, board_tile_type_to_player_id(eaten_tile));
+        Player* eater_player = player_find_by_id(game, board_tile_type_to_player_id(eater_tile));
+        if (board_tile_type_is_pacman(eaten_tile) == 1)             // If a monster eats a Pacman
+        {
+            vec_set(eaten_player->pacman_pos, res_x, res_y);        // Pacman respawns
+            vec_set(eater_player->monster_pos, eaten_x, eaten_y);   // Put the monster in the Pacman's position
+        }
+        else                                                        // If a Pacman eats a monster
+        {
+            vec_set(eaten_player->monster_pos, res_x, res_y);       // Monster respawns
+            vec_set(eater_player->pacman_pos, eaten_x, eaten_y);    // Put the Pacman in the monster's position
+        }
+        board_set_tile(game->board, eaten_x, eaten_y, eater_tile);  // Move things on the board
+        board_set_tile(game->board, res_x, res_y, eaten_tile);                                                       
+    }
+    else
+    {
+        unsigned int eaten_tile = board_get_tile(game->board, eaten_x, eaten_y);
+        unsigned int eater_tile = board_get_tile(game->board, eater_x, eater_y);
+        board_set_tile(game->board, eaten_x, eaten_y, TILE_EMPTY);  // Mark the eaten's tile as a valid random tile to respawn in
+        board_random_empty_space(game->board, &res_x, &res_y);      // Determine the random respawn position
+        Player* eaten_player = player_find_by_id(game, board_tile_type_to_player_id(eaten_tile));
+        Player* eater_player = player_find_by_id(game, board_tile_type_to_player_id(eater_tile));
+        if (board_tile_type_is_pacman(eaten_tile) == 1)             // If a monster eats a Pacman
+        {
+            vec_set(eaten_player->pacman_pos, res_x, res_y);        // Pacman respawns
+        }
+        else                                                        // If a Pacman eats a monster
+        {
+            vec_set(eaten_player->monster_pos, res_x, res_y);       // Monster respawns
+            puts("uh oh");
+        }
+        board_set_tile(game->board, res_x, res_y, eaten_tile);      // Move things on the board                                             
+    }
+}
+
 // Handles movement for the pacman
 static void handle_pacman_move(Game* game, Player* player, int tgt_x, int tgt_y)
 {
@@ -335,14 +373,47 @@ static void handle_pacman_move(Game* game, Player* player, int tgt_x, int tgt_y)
 
     case TILE_BRICK:            // Bounce back (if able)
         tgt_x = curr_x; tgt_y = curr_y;
-        get_opposite_target_tile(&tgt_x, &tgt_y, player->pacman_move_dir);  // Invert the movement direction
+        get_opposite_target_tile(&tgt_x, &tgt_y, player->pacman_move_dir);                                          // Invert the movement direction
         if (board_is_oob(game->board, tgt_x, tgt_y) || board_get_tile(game->board, tgt_x, tgt_y) == TILE_BRICK);    // If the new target tile is OOB or a brick
             // Stay in place, do nothing
         else
-            handle_pacman_move(game, player, tgt_x, tgt_y); // Handle the new target tile
+            handle_pacman_move(game, player, tgt_x, tgt_y);                                                         // Handle the new target tile
         break;
 
-    default:
+    default:                    // Could be a friendly or enemy
+        if (board_tile_type_to_player_id(tile) == player->player_id)    // If friendly monster
+        {
+            board_set_tile(game->board, tgt_x, tgt_y, board_get_tile(game->board, curr_x, curr_y)); // Swap the characters on the board
+            board_set_tile(game->board, curr_x, curr_y, tile);                                      
+            Vector* tmp_vec = player->pacman_pos;                                                   // Swap the character positions (on the struct)
+            player->pacman_pos = player->monster_pos;                                               // Simply swapping the pointer works
+            player->monster_pos = tmp_vec;
+            clock_gettime(CLOCK_MONOTONIC, &player->pacman_last_move_time);                         // Update the last move time
+        }
+        else if (board_tile_type_is_pacman(tile) == 1)          // If other pacman
+        {
+            board_set_tile(game->board, tgt_x, tgt_y, board_get_tile(game->board, curr_x, curr_y)); // Swap the characters on the board
+            board_set_tile(game->board, curr_x, curr_y, tile);                    
+            Vector* tmp_vec = player->pacman_pos;                                                   // Swap the character positions (on the struct)
+            Player* target_player = player_find_by_id(game, board_tile_type_to_player_id(tile));
+            player->pacman_pos = target_player->pacman_pos;
+            target_player->pacman_pos = tmp_vec;
+            clock_gettime(CLOCK_MONOTONIC, &player->pacman_last_move_time);                         // Update the last move time
+        }
+        else                                                            // If enemy monster
+        {
+            if (player->powered_up)     // Pacman has teeth -> it eats the monster
+            {
+                handle_character_eat(game, curr_x, curr_y, tgt_x, tgt_y, 1);
+                clock_gettime(CLOCK_MONOTONIC, &player->pacman_last_move_time);
+            }
+            else                        // Pacman forgot his dentures -> the monster eats it
+            {
+                handle_character_eat(game, tgt_x, tgt_y, curr_x, curr_y, 0);
+                clock_gettime(CLOCK_MONOTONIC, &player->pacman_last_move_time);
+            }
+        }
+        
         break;
     }
 }
@@ -451,7 +522,7 @@ int main (void)
         // ~ 60Hz server
         struct timespec frame_end;
         clock_gettime(CLOCK_MONOTONIC, &frame_end);
-        SDL_Delay(17 - time_diff_ms(frame_begin, frame_end));
+        SDL_Delay(16 /*- time_diff_ms(frame_begin, frame_end)*/);
 	}
 
     pthread_kill(connect_to_clients_thread, SIGUSR1);    

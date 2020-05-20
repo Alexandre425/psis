@@ -29,9 +29,15 @@ unsigned int board_get_tile(Board* board, int x, int y);
 
 // Translates board tile type to true player id
 unsigned int board_tile_type_to_player_id(unsigned int tile_type);
+// Translates board tile type to character type
+// Returns 1 if pacman, 0 if monster
+int board_tile_type_is_pacman(unsigned int tile_type);
 // Translates the player id into a tile type to be stored on the board
 // is_pacman should be 1 if a pacman is to be stored, or 0 if a monster
 unsigned int board_player_id_to_tile_type(unsigned int player_id, int is_pacman);
+// Finds an empty space in the board at random
+// Puts the resulting coordinates in x, y
+void board_random_empty_space(Board* board, int* x, int* y);
 // Checks if the target coordinates are out of bounds
 // Returns 1 if OOB, 0 otherwise
 int board_is_oob(Board* board, int x, int y);

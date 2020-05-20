@@ -72,6 +72,11 @@ unsigned int board_tile_type_to_player_id(unsigned int tile_type)
     return (tile_type - TILE_INVALID) / (int)2;
 }
 
+int board_tile_type_is_pacman(unsigned int tile_type)
+{
+    return (tile_type - TILE_INVALID) % (int)2;
+}
+
 unsigned int board_player_id_to_tile_type(unsigned int player_id, int is_pacman)
 {
     // player_ids are stored after the basic tiles, the last of which is tile_last
@@ -79,6 +84,16 @@ unsigned int board_player_id_to_tile_type(unsigned int player_id, int is_pacman)
     // their monster would be tile_last + 14
     // this is unique to their player_id
     return TILE_INVALID + (player_id*2) + is_pacman;
+}
+
+void board_random_empty_space(Board* board, int* x, int* y)
+{
+    do
+    {
+        *x = rand() % vec_get_x(board->board_size);
+        *y = rand() % vec_get_y(board->board_size);
+    }
+    while (board->board[*x][*y] != TILE_EMPTY);
 }
 
 int board_is_oob(Board* board, int x, int y)

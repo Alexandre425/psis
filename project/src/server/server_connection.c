@@ -118,7 +118,11 @@ void* connect_to_clients (void* game)
     listen_addr.sin_addr.s_addr = htonl(INADDR_ANY);  // Address to accept any incoming message
 
     // Bind socket to name
-    bind(listen_socket, (const struct sockaddr*)&listen_addr, sizeof(listen_addr));
+    if (bind(listen_socket, (const struct sockaddr*)&listen_addr, sizeof(listen_addr)) == -1)
+    {
+        perror("ERROR - Could not bind to address");
+        exit(EXIT_FAILURE);
+    }
 
     // Tell the kernel to listen on this socket
     listen(listen_socket, 5);
