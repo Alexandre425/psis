@@ -25,7 +25,10 @@ enum _MessageType {
     // The ID of the client
     MESSAGE_PLAYER_ID,
     // The list of players
-    MESSAGE_PLAYER_LIST};
+    MESSAGE_PLAYER_LIST,
+    // Alerts of a player's disconnection
+    MESSAGE_PLAYER_DISCONNECT
+    };
 
 // Ran when a misaligned message is detected in the receiving end
 void message_misaligned(void);

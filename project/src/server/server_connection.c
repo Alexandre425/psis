@@ -212,7 +212,8 @@ void* recv_from_client (void* _client)
             else
             {
                 perror("ERROR - Could not receive data");
-                exit(EXIT_FAILURE);
+                fprintf(stdout, "Kicking client %d!\n", client->player_id);
+                break;  // Break the loop, disconnect client
             }
         }
         // Use function respective to type
@@ -230,7 +231,6 @@ void* recv_from_client (void* _client)
             char move_dir;
             message_recv_movement(client->socket, (char*)&move_dir);
             player_set_pac_move_dir(player, move_dir);
-            printf("Received movement dir %c from player %d\n", move_dir, client->player_id);
             break;
         }
         case MESSAGE_MOVE_MON:
@@ -238,7 +238,6 @@ void* recv_from_client (void* _client)
             char move_dir;
             message_recv_movement(client->socket, (char*)&move_dir);
             player_set_mon_move_dir(player, move_dir);
-            printf("Received movement dir %c from player %d\n", move_dir, client->player_id);
             break;
         }        
         default:
@@ -257,12 +256,14 @@ void* recv_from_client (void* _client)
     client_destroy(client);
     // Terminate connection with client
     shutdown(client->socket, SHUT_RDWR);
+    // Alert the remaining clients of the disconnect
+    send_to_all_clients(client->game, MESSAGE_PLAYER_DISCONNECT, (void*)&client->player_id);
     free(client);
 
     return NULL;
 }
 
-void send_to_all_clients(Game* game, MessageType message_type)
+void send_to_all_clients(Game* game, MessageType message_type, void* extra_data)
 {
     pthread_mutex_lock(&client_array_lock);
     // For every client
@@ -277,6 +278,11 @@ void send_to_all_clients(Game* game, MessageType message_type)
         case MESSAGE_PLAYER_LIST:
             message_send_player_list(client_array[i]->socket, game);
             break;
+        case MESSAGE_PLAYER_DISCONNECT:
+        {
+            unsigned int* player_id = (unsigned int*)extra_data;
+            message_send_player_disconnect(client_array[i]->socket, *player_id);
+        }
 
         default:
             break;

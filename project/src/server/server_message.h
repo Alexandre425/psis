@@ -16,3 +16,5 @@ void message_send_player_id(int socket, unsigned int player_id);
 void message_send_board(int socket, Board* board);
 // Sends the list of players to a client
 void message_send_player_list(int socket, Game* game);
+// Sends the player ID of a disconnecting client to a client
+void message_send_player_disconnect(int socket, unsigned int player_id);

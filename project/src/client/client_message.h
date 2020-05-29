@@ -28,5 +28,7 @@ void message_recv_board(int socket, Board** board);
 void message_recv_player_list(int socket, Game* game);
 // Receives a player ID, specifically the client's own ID
 void message_recv_player_id(int socket, unsigned int* player_id);
+// Receives a player ID corresponding to a disconnected player
+void message_recv_player_disconnect(int socket, unsigned int* player_id);
 
 

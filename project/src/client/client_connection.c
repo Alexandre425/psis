@@ -98,6 +98,14 @@ void* recv_from_server(void* _game)
             unsigned int player_id;
             message_recv_player_id(server_socket, &player_id);
             game_set_player_id(game, player_id);
+            break;
+        }
+        case MESSAGE_PLAYER_DISCONNECT:
+        {
+            unsigned int player_id;
+            message_recv_player_disconnect(server_socket, &player_id);
+            player_destroy(game, player_id);
+            break;
         }
         
         default:
@@ -109,5 +117,6 @@ void* recv_from_server(void* _game)
         if (mt != MESSAGE_TERMINATOR)
             message_misaligned();
     }
+    client_quit();
     return NULL;
 }

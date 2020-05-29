@@ -10,6 +10,9 @@ typedef struct _Player Player;
 
 typedef struct _Game Game;
 
+// Signals the client app (main thread) to quit in an orderly manner
+void client_quit(void);
+
 // Returns the player array
 // Puts the number of players in n_players
 Player** game_get_player_array(Game* game, unsigned int* n_players);

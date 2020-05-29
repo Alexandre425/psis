@@ -12,6 +12,11 @@
 #include "client_message.h"
 #include "client.h"
 
+// Used by other threads to stop the main loop and quit
+int quit = 0;
+void client_quit(void)
+{quit = 1;}
+
 typedef struct _Player
 {
     unsigned int player_id;
@@ -370,14 +375,13 @@ int main (int argc, char* argv[])
 
     // Poll and draw loop
     SDL_Event event;
-    bool quit = false;
     while (!quit){
 		while (SDL_PollEvent(&event)) {
             switch (event.type)
             {
             case SDL_QUIT:          // Quit the program when the window is closed
                 close_board_windows();
-                quit = true;
+                quit = 1;
                 break;
             default:
                 break;
@@ -393,6 +397,7 @@ int main (int argc, char* argv[])
 	}
 
     shutdown(server_socket, SHUT_RDWR);
+    pthread_cancel(recv_from_server_thread);
 
     return 0;
 }

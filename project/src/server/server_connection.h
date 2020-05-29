@@ -16,5 +16,6 @@ void* recv_from_client (void* client);
 
 // Sends a message of type message_type to all the clients currently connected
 // All clients receive the same message
-// The message's contents are taken from the game struct
-void send_to_all_clients(Game* game, MessageType message_type);
+// The message's contents are usually taken from the game struct 
+// Certain messages require extra information. It is passed via extra_data
+void send_to_all_clients(Game* game, MessageType message_type, void* extra_data);

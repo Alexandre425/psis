@@ -73,3 +73,10 @@ void message_send_player_list(int socket, Game* game)
 
     message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
 }
+
+void message_send_player_disconnect(int socket, unsigned int player_id)
+{
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_PLAYER_DISCONNECT);
+    message_send_uint32_t(socket, (uint32_t)player_id);
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
+}
