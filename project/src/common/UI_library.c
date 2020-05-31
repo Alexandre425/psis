@@ -13,6 +13,7 @@ SDL_Texture *display;
 SDL_Surface *screen;
 SDL_Texture* monster;
 SDL_Texture* pacman;
+SDL_Texture* power_pacman;
 SDL_Texture* lemon;
 SDL_Texture* brick;
 SDL_Texture* cherry;
@@ -76,6 +77,18 @@ int create_board_window(int dim_x, int dim_y){
  			pacman = SDL_CreateTextureFromSurface(renderer, loadedSurface);
  			SDL_FreeSurface( loadedSurface );
  	}
+	
+	// load power pacman
+	loadedSurface = IMG_Load("res/powerpacman.png");
+ 	if ( loadedSurface == NULL ){
+ 		printf( "Unable to load image %s! SDL_image Error: %s\n", "./powerpacman.png", IMG_GetError() );
+ 		exit(-1);
+ 	} else {
+		power_pacman = SDL_CreateTextureFromSurface(renderer, loadedSurface);
+		SDL_FreeSurface( loadedSurface );
+ 	}
+
+
 
 	//load lemon
 	loadedSurface = IMG_Load("res/lemon.png");
@@ -185,8 +198,11 @@ void priv_paint_place(int  board_x, int board_y , int r, int g, int b, SDL_Textu
 	// Removed to allow presenting the render with all changes made simultaneously
 	//SDL_RenderPresent(renderer);
 }
-void paint_pacman(int  board_x, int board_y , int r, int g, int b){
-	priv_paint_place(board_x, board_y , r, g, b, pacman);
+void paint_pacman(int  board_x, int board_y , int r, int g, int b, int powered_up){
+	if (powered_up)
+		priv_paint_place(board_x, board_y , r, g, b, power_pacman);
+	else
+		priv_paint_place(board_x, board_y , r, g, b, pacman);
 }
 void paint_monster(int  board_x, int board_y , int r, int g, int b){
 	priv_paint_place(board_x, board_y , r, g, b, monster);

@@ -33,7 +33,7 @@ int player_get_mon_pos_y(Player* player);
 // Returns a player's color
 Color player_get_color(Player* player);
 // Returns a player's power up state
-bool player_get_power_up_state(Player* player);
+int player_get_power_up_state(Player* player);
 
 // Sets a player's color
 void player_set_color(Player* player, Color color);

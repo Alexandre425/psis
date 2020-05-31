@@ -21,7 +21,7 @@ typedef struct _Player
 {
     unsigned int player_id;
     Color color;
-    bool powered_up;
+    int powered_up;
     Vector* pacman_pos;
     Vector* monster_pos;
 } Player;
@@ -33,7 +33,7 @@ typedef struct _Game
     Board* board;
     unsigned int n_players;
     Player** players;
-    Fruit* fruits;
+    //Fruit* fruits;
 } Game;
 
 int game_get_server_socket(Game* game)
@@ -108,11 +108,11 @@ void player_destroy(Game* game, unsigned int player_id)
     free(player->pacman_pos);
     free(player->monster_pos);
 
-    // Free the player struct
-    free(player);
+    // Overwrite the player to be destroyed with the last player
+    memcpy(player, game->players[game->n_players-1], sizeof(Player));
 
-    // Overwrite the player to be destroyed with the last player ptr
-    memcpy(&player, &game->players[game->n_players-1], sizeof(Player*));
+    // Free the player struct
+    free(game->players[game->n_players-1]);
 
     game->n_players--;
     // Not strictly necessary, but prevents a bug with player_create where
@@ -173,7 +173,7 @@ static void draw_players(Game* game)
         Player* player = game->players[i];
         unsigned int r, g, b;
         color_hex_to_rgb(player->color, &r, &g, &b);
-        paint_pacman(vec_get_x(player->pacman_pos), vec_get_y(player->pacman_pos), r, g, b);
+        paint_pacman(vec_get_x(player->pacman_pos), vec_get_y(player->pacman_pos), r, g, b, player->powered_up);
         paint_monster(vec_get_x(player->monster_pos), vec_get_y(player->monster_pos), r, g, b);
     }
 }

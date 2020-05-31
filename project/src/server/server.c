@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <pthread.h>
 #include <SDL2/SDL.h>
 #include <signal.h>
@@ -19,15 +18,22 @@ typedef struct _Player
 {
     unsigned int player_id;
     Color color;
-    bool powered_up;
+    int powered_up;                         // Stores 0, 1 or 2, depending on how many monsters the pacman can still eat
     Vector* pacman_pos;
-    char pacman_move_dir;
-    struct timespec pacman_last_move_time;
+    char pacman_move_dir;                   // Movement direction
+    struct timespec pacman_last_move_time;  // Time of last movement
     Vector* monster_pos;
     char monster_move_dir;
     struct timespec monster_last_move_time;
 } Player;
 
+typedef struct _Fruit
+{
+    unsigned int fruit_type;    // Cherry or lemon
+    int is_alive;               // Is it on the board? (Or waiting to respawn)
+    struct timespec eaten_time; // Time it was last eaten
+    Vector* pos;
+} Fruit;
 
 typedef struct _Game
 {
@@ -35,12 +41,85 @@ typedef struct _Game
     unsigned int max_players;
     unsigned int n_players;
     Player** players;
+    unsigned int n_fruits;
     Fruit* fruits;
 } Game;
 
 Board* game_get_board(Game* game)
 {
     return game->board;
+}
+
+Player** game_get_player_array(Game* game, unsigned int* n_players)
+{
+    *n_players = game->n_players;
+    return game->players;
+}
+
+// Properly intializes the data for a fruit
+static void fruit_create(Game* game, Fruit* fruit, unsigned int fruit_type)
+{
+    fruit->fruit_type = fruit_type;
+    fruit->is_alive = 1;
+    int x, y;                                       // Put the fruit in an empty space
+    board_random_empty_space(game->board, &x, &y);
+    fruit->pos = vec_create(x, y);
+    board_set_tile(game->board, x, y, TILE_FRUIT);  // Put it on the board
+}
+
+// Destroys a fruit
+static void fruit_destroy(Game* game, Fruit* fruit)
+{
+    if (fruit->is_alive)
+        board_set_tile(game->board, vec_get_x(fruit->pos), vec_get_y(fruit->pos), TILE_EMPTY);
+    free(fruit->pos);
+}
+
+// Respawns a fruit
+static void fruit_respawn(Game* game, Fruit* fruit)
+{
+    fruit->is_alive = 1;
+    int x, y;
+    board_random_empty_space(game->board, &x, &y);
+    vec_set(fruit->pos, x, y);
+    board_set_tile(game->board, x, y, TILE_FRUIT);
+}
+
+// Returns the fruit on given position
+static Fruit* fruit_find_by_pos(Game* game, int x, int y)
+{
+    for (unsigned int i = 0; i < game->n_fruits; ++i)
+    {
+        Fruit* fruit = &game->fruits[i];
+        if (x == vec_get_x(fruit->pos) && y == vec_get_y(fruit->pos))
+            return fruit;
+    }
+    puts("ERROR - Attempted to find fruit in a position where there is none");
+    exit(EXIT_FAILURE);
+}
+
+// Updates the number of fruit on the board and reallocs the fruit array if necessary
+static void fruit_count_update(Game* game, unsigned int n_players)
+{
+    int new_n_fruits = 2 * (n_players - 1);
+    if (new_n_fruits < 0) new_n_fruits = 0;
+
+    if (new_n_fruits > game->n_fruits)      // Number of fruits has increased
+    {
+        if (game->fruits == NULL)
+            game->fruits = malloc_check(new_n_fruits * sizeof(Fruit));
+        else
+            game->fruits = realloc_check(game->fruits, new_n_fruits * sizeof(Fruit));
+        fruit_create(game, &game->fruits[new_n_fruits - 1], FRUIT_CHERRY);      // Create two new fruits
+        fruit_create(game, &game->fruits[new_n_fruits - 2], FRUIT_LEMON);
+    }
+    if (new_n_fruits < game->n_fruits)      // Number of fruits has decreased
+    {
+        fruit_destroy(game, &game->fruits[game->n_fruits - 1]);                 // Destroy two fruits
+        fruit_destroy(game, &game->fruits[game->n_fruits - 2]);
+    }
+    
+    game->n_fruits = new_n_fruits;
 }
 
 Player* player_find_by_id(Game* game, unsigned int player_id)
@@ -55,26 +134,16 @@ Player* player_find_by_id(Game* game, unsigned int player_id)
     return NULL;
 }
 
-Player** game_get_player_array(Game* game, unsigned int* n_players)
-{
-    *n_players = game->n_players;
-    return game->players;
-}
-
 unsigned int player_create(Game* game)
 {
     pthread_mutex_lock(&player_array_lock);
+    game->n_players++;
     // If no players exist (array uninitialized)
     if (!game->players)
-    {
-        game->n_players++;
         game->players = malloc_check(sizeof(Player*));
-    }
     else
-    {
-        game->n_players++;
         game->players = realloc_check(game->players, game->n_players * sizeof(Player*));
-    }
+
     Player* new_player = malloc_check(sizeof(Player));
     game->players[game->n_players-1] = new_player;
     // Default color (black)
@@ -102,6 +171,9 @@ unsigned int player_create(Game* game)
     clock_gettime(CLOCK_MONOTONIC, &new_player->monster_last_move_time);
     clock_gettime(CLOCK_MONOTONIC, &new_player->pacman_last_move_time);
 
+    // Update the fruit number
+    fruit_count_update(game, game->n_players);
+
     pthread_mutex_unlock(&player_array_lock);
 
     return player_id;
@@ -122,13 +194,13 @@ void player_destroy(Game* game, unsigned int player_id)
     free(player->pacman_pos);
     free(player->monster_pos);
 
-    // Free the player struct
-    free(player);
+    // Overwrite the player to be destroyed with the last player
+    memcpy(player, game->players[game->n_players-1], sizeof(Player));
 
-    // Overwrite the player to be destroyed with the last player ptr
-    memcpy(&player, &game->players[game->n_players-1], sizeof(Player*));
-
+    // Free the last player
+    free(game->players[game->n_players-1]);
     game->n_players--;
+
     // Not strictly necessary, but prevents a bug with player_create where
     // the second client joining an empty server gets assigned player_id 2
     // instead of 1 (as the array still contains the data after the realloc)
@@ -137,6 +209,9 @@ void player_destroy(Game* game, unsigned int player_id)
         free(game->players);
         game->players = NULL;
     }
+    
+    // Update the fruit number
+    fruit_count_update(game, game->n_players);
     
     pthread_mutex_unlock(&player_array_lock);
 }
@@ -165,7 +240,7 @@ Color player_get_color(Player* player)
 {
     return player->color;
 }
-bool player_get_power_up_state(Player* player)
+int player_get_power_up_state(Player* player)
 {
     return player->powered_up;
 }
@@ -254,8 +329,23 @@ static void draw_players(Game* game)
         Player* player = game->players[i];
         unsigned int r, g, b;
         color_hex_to_rgb(player->color, &r, &g, &b);
-        paint_pacman(vec_get_x(player->pacman_pos), vec_get_y(player->pacman_pos), r, g, b);
+        paint_pacman(vec_get_x(player->pacman_pos), vec_get_y(player->pacman_pos), r, g, b, player->powered_up);
         paint_monster(vec_get_x(player->monster_pos), vec_get_y(player->monster_pos), r, g, b);
+    }
+}
+
+// Draws the fruit
+static void draw_fruit(Game* game)
+{
+    for (unsigned int i = 0; i < game->n_fruits; ++i)
+    {
+        Fruit* fruit = &game->fruits[i];
+        if (!fruit->is_alive)
+            continue;
+        if (fruit->fruit_type == FRUIT_CHERRY)
+            paint_cherry(vec_get_x(fruit->pos), vec_get_y(fruit->pos));
+        else
+            paint_lemon(vec_get_x(fruit->pos), vec_get_y(fruit->pos));
     }
 }
 
@@ -355,6 +445,29 @@ static void handle_character_eat(Game* game, int eater_x, int eater_y, int eaten
     }
 }
 
+// Handles a character eating a fruit
+static void handle_fruit_eat(Game* game, Fruit* fruit, Player* player, int is_pacman)
+{
+    int fruit_x, fruit_y, player_x, player_y;
+    vec_get(fruit->pos, &fruit_x, &fruit_y); 
+    if (is_pacman)  // Move the character in question
+    {
+        vec_get(player->pacman_pos, &player_x, &player_y);
+        vec_set(player->pacman_pos, vec_get_x(fruit->pos), vec_get_y(fruit->pos));
+        player->powered_up = 2;
+    }
+    else
+    {
+        vec_get(player->monster_pos, &player_x, &player_y);
+        vec_set(player->monster_pos, vec_get_x(fruit->pos), vec_get_y(fruit->pos));
+    }
+    board_set_tile(game->board, fruit_x, fruit_y, board_get_tile(game->board, player_x, player_y)); // Move things on the board
+    board_set_tile(game->board, player_x, player_y, TILE_EMPTY);
+
+    fruit->is_alive = 0;    // Set the time the fruit was eaten
+    clock_gettime(CLOCK_MONOTONIC, &fruit->eaten_time);
+}
+
 // Handles movement for the pacman
 static void handle_pacman_move(Game* game, Player* player, int tgt_x, int tgt_y)
 {
@@ -370,6 +483,14 @@ static void handle_pacman_move(Game* game, Player* player, int tgt_x, int tgt_y)
         board_set_tile(game->board, curr_x, curr_y, TILE_EMPTY);                                // Empty the tile behind it
         clock_gettime(CLOCK_MONOTONIC, &player->pacman_last_move_time);                         // Update the last move time
         break;
+
+    case TILE_FRUIT:
+    {
+        Fruit* fruit = fruit_find_by_pos(game, tgt_x, tgt_y);
+        handle_fruit_eat(game, fruit, player, 1);
+        clock_gettime(CLOCK_MONOTONIC, &player->pacman_last_move_time);    
+        break;
+    }
 
     case TILE_BRICK:            // Bounce back (if able)
         tgt_x = curr_x; tgt_y = curr_y;
@@ -405,6 +526,7 @@ static void handle_pacman_move(Game* game, Player* player, int tgt_x, int tgt_y)
             if (player->powered_up)     // Pacman has teeth -> it eats the monster
             {
                 handle_character_eat(game, curr_x, curr_y, tgt_x, tgt_y, 1);
+                player->powered_up = player->powered_up - 1;
                 clock_gettime(CLOCK_MONOTONIC, &player->pacman_last_move_time);
             }
             else                        // Pacman forgot his dentures -> the monster eats it
@@ -433,6 +555,14 @@ static void handle_monster_move(Game* game, Player* player, int tgt_x, int tgt_y
         board_set_tile(game->board, curr_x, curr_y, TILE_EMPTY);                                // Empty the tile behind it
         clock_gettime(CLOCK_MONOTONIC, &player->monster_last_move_time);                        // Update the last move time
         break;
+
+    case TILE_FRUIT:
+    {
+        Fruit* fruit = fruit_find_by_pos(game, tgt_x, tgt_y);
+        handle_fruit_eat(game, fruit, player, 0);
+        clock_gettime(CLOCK_MONOTONIC, &player->monster_last_move_time);    
+        break;
+    }
 
     case TILE_BRICK:
         tgt_x = curr_x; tgt_y = curr_y;
@@ -469,6 +599,7 @@ static void handle_monster_move(Game* game, Player* player, int tgt_x, int tgt_y
             if (target_player->powered_up)  // Enemy pacman has teeth - monster dies
             {
                 handle_character_eat(game, tgt_x, tgt_y, curr_x, curr_y, 0);
+                target_player->powered_up = target_player->powered_up - 1;
                 clock_gettime(CLOCK_MONOTONIC, &player->monster_last_move_time);
             }
             else                            // No teeth - enemy pacman dies
@@ -504,6 +635,13 @@ static void game_update(Game* game)
 
             handle_pacman_move(game, player, tgt_x, tgt_y);
         }
+    }
+    // Respawn the fruits if enough time has passed
+    for (unsigned int i = 0; i < game->n_fruits; ++i)
+    {
+        Fruit* fruit = &game->fruits[i];
+        if (!fruit->is_alive && time_diff_ms(fruit->eaten_time, now) > 2000)
+            fruit_respawn(game, fruit);
     }
 }
 
@@ -543,7 +681,7 @@ int main (void)
     draw_bricks(game);
     // Poll and draw loop
     SDL_Event event;
-    bool quit = false;
+    int quit = 0;
     while (!quit){
         struct timespec frame_begin;
         clock_gettime(CLOCK_MONOTONIC, &frame_begin);
@@ -553,7 +691,7 @@ int main (void)
             {
             case SDL_QUIT:          // Quit the program when the window is closed
                 close_board_windows();
-                quit = true;
+                quit = 1;
                 break;
             
             default:
@@ -575,6 +713,7 @@ int main (void)
         clear_board(board_get_size_x(game->board), board_get_size_y(game->board));
         draw_bricks(game);
         draw_players(game);
+        draw_fruit(game);
         render_board();
 
         // ~ 60Hz server

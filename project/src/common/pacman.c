@@ -105,9 +105,3 @@ int board_is_oob(Board* board, int x, int y)
         return 1;
 }
 
-// A fruit's type and position
-typedef struct _Fruit
-{
-    int fruit_type;
-    Vector* pos;
-} Fruit;

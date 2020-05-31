@@ -63,3 +63,8 @@ int vec_get_y (Vector* vec)
 {
     return vec->y;
 }
+void vec_get (Vector* vec, int* x, int* y)
+{
+    *x = vec->x;
+    *y = vec->y;
+}

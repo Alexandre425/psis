@@ -6,7 +6,7 @@
 
 enum FruitType {FRUIT_LEMON, FRUIT_CHERRY};
 
-enum TileType {TILE_EMPTY, TILE_BRICK, TILE_INVALID};
+enum TileType {TILE_EMPTY, TILE_BRICK, TILE_FRUIT, TILE_INVALID};
 
 // The game board
 typedef struct _Board Board;
@@ -41,11 +41,3 @@ void board_random_empty_space(Board* board, int* x, int* y);
 // Checks if the target coordinates are out of bounds
 // Returns 1 if OOB, 0 otherwise
 int board_is_oob(Board* board, int x, int y);
-
-
-
-
-
-
-// A fruit's type and position
-typedef struct _Fruit Fruit;

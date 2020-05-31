@@ -68,7 +68,7 @@ void message_send_player_list(int socket, Game* game)
         message_send_int32_t(socket, (int32_t)player_get_pac_pos_y(player));
         message_send_int32_t(socket, (int32_t)player_get_mon_pos_x(player));        // Send the monster's position (x then y)
         message_send_int32_t(socket, (int32_t)player_get_mon_pos_y(player));
-        message_send_char(socket, (char)player_get_power_up_state(player));         // Send the power up state
+        message_send_int32_t(socket, (int32_t)player_get_power_up_state(player));   // Send the power up state
     }
 
     message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);

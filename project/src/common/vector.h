@@ -20,3 +20,5 @@ void vec_set_y (Vector* vec, int y);
 int vec_get_x (Vector* vec);
 // Gets the vector's y variable
 int vec_get_y (Vector* vec);
+// Puts both of the vector's variables in x and y
+void vec_get (Vector* vec, int* x, int* y);

@@ -90,8 +90,8 @@ void message_recv_player_list(int socket, Game* game)
         message_recv_uint32_t(socket, (uint32_t*)&x);
         message_recv_uint32_t(socket, (uint32_t*)&y);
         player_set_mon_pos(player, x, y);   
-        bool powered_up;                                        // The power up state
-        message_recv_char(socket, (char*)&powered_up);
+        int powered_up;                                        // The power up state
+        message_recv_int32_t(socket, (int32_t*)&powered_up);
         player_set_power_up_state(player, powered_up);
     }
 }

@@ -56,6 +56,7 @@ static void client_destroy(Client* client)
         // Compare the pointers
         if (client == client_array[i])
         {
+            free(client);
             // Overwrite with last
             client_array[i] = client_array[n_clients - 1];
             n_clients--;
@@ -179,8 +180,6 @@ void* recv_from_client (void* _client)
     // Cast to Client
     Client* client = (Client*)_client;
 
-    Player* player = player_find_by_id(client->game, client->player_id);
-
     // Handle the shutdown signal
     struct sigaction action;
     action.sa_handler = null_handler;
@@ -215,6 +214,12 @@ void* recv_from_client (void* _client)
                 fprintf(stdout, "Kicking client %d!\n", client->player_id);
                 break;  // Break the loop, disconnect client
             }
+        }
+        Player* player = player_find_by_id(client->game, client->player_id);
+        if (player == NULL)
+        {
+            puts("ERROR - Couldn't find player in recv_from_client");
+            exit(EXIT_FAILURE);
         }
         // Use function respective to type
         switch (mt)
@@ -252,13 +257,14 @@ void* recv_from_client (void* _client)
     
     // Destroy the player who left
     player_destroy(client->game, client->player_id);
+    // Store the player ID
+    unsigned int player_id = client->player_id;
     // Remove self from the client handler array
     client_destroy(client);
     // Terminate connection with client
     shutdown(client->socket, SHUT_RDWR);
     // Alert the remaining clients of the disconnect
-    send_to_all_clients(client->game, MESSAGE_PLAYER_DISCONNECT, (void*)&client->player_id);
-    free(client);
+    send_to_all_clients(client->game, MESSAGE_PLAYER_DISCONNECT, (void*)&player_id);
 
     return NULL;
 }
