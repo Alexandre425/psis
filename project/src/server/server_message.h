@@ -18,3 +18,6 @@ void message_send_board(int socket, Board* board);
 void message_send_player_list(int socket, Game* game);
 // Sends the player ID of a disconnecting client to a client
 void message_send_player_disconnect(int socket, unsigned int player_id);
+
+// Sends the list of fruit
+void message_send_fruit_list(int socket, Game* game);

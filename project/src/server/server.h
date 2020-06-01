@@ -7,6 +7,8 @@
 
 typedef struct _Player Player;
 
+typedef struct _Fruit Fruit;
+
 typedef struct _Game Game;
 
 // Returns the game board
@@ -14,6 +16,18 @@ Board* game_get_board(Game* game);
 // Returns the player array
 // Puts the number of players in n_players
 Player** game_get_player_array(Game* game, unsigned int* n_players);
+// Returns the fruit array
+// Puts the number of fruit in n_fruits
+Fruit** game_get_fruit_array(Game* game, unsigned int* n_fruits);
+
+// Returns a fruit's x position
+int fruit_get_pos_x(Fruit* fruit);
+// Returns a fruit's y position
+int fruit_get_pos_y(Fruit* fruit);
+// Returns a fruit's is_alive field
+int fruit_get_is_alive(Fruit* fruit);
+// Returns the fruit's type
+unsigned int fruit_get_type(Fruit* fruit);
 
 // Creates a player and returns their player_id
 unsigned int player_create(Game* game);

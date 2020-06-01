@@ -26,6 +26,13 @@ typedef struct _Player
     Vector* monster_pos;
 } Player;
 
+typedef struct _Fruit
+{
+    unsigned int fruit_type;    // Cherry or lemon
+    int is_alive;               // Is it on the board? (Or waiting to respawn)
+    Vector* pos;
+} Fruit;
+
 typedef struct _Game
 {
     int server_socket;
@@ -33,7 +40,8 @@ typedef struct _Game
     Board* board;
     unsigned int n_players;
     Player** players;
-    //Fruit* fruits;
+    unsigned int n_fruits;
+    Fruit* fruits;
 } Game;
 
 int game_get_server_socket(Game* game)
@@ -44,6 +52,14 @@ Board* game_get_board(Game* game)
 {
     return game->board;
 }
+unsigned int game_get_n_fruits(Game* game)
+{
+    return game->n_fruits;
+}
+Fruit* game_get_fruit(Game* game, unsigned int index)
+{
+    return &game->fruits[index];
+}
 
 void game_set_player_id(Game* game, unsigned int player_id)
 {
@@ -53,6 +69,47 @@ void game_set_board(Game* game, Board* board)
 {
     game->board = board;
 }
+void game_set_n_fruits(Game* game, unsigned int n_fruits)
+{
+    if (n_fruits > game->n_fruits)
+    {
+        if (!game->fruits)          // If fruits were created
+            game->fruits = malloc_check(n_fruits * sizeof(Fruit));  // This already zeroes things out :)
+        else
+        {
+            unsigned int diff = n_fruits - game->n_fruits;
+            game->fruits = realloc_check(game->fruits, n_fruits * sizeof(Fruit));
+            memset(game->fruits + (game->n_fruits * sizeof(Fruit)), 0, diff * sizeof(Fruit));   // Basically zeroes out the memory added with the realloc
+        }                                                                                       // it's bad, but I ain't allocating every fruit, nuh uh
+    }
+    if (n_fruits < game->n_fruits)  // If fruits were deleted (players left)
+    {
+        unsigned int diff = game->n_fruits - n_fruits;  // Find how many fruits were deleted
+        for (unsigned int i = 0; i < diff; ++i)         // Free that many fruit in the end of the array which 
+        {                                               //  prevents a memory leak with unused vectors
+            free(game->fruits[game->n_fruits - 1 - i].pos);     // r/badcode worthy? oof
+        }
+    }
+    game->n_fruits = n_fruits;
+}
+
+
+void fruit_set_pos(Fruit* fruit, int x, int y)
+{
+    if (!fruit->pos)
+        fruit->pos = vec_create(x, y);
+    else
+        vec_set(fruit->pos, x, y);
+}
+void fruit_set_type(Fruit* fruit, unsigned int fruit_type)
+{
+    fruit->fruit_type = fruit_type;
+}
+void fruit_set_is_alive(Fruit* fruit, int is_alive)
+{
+    fruit->is_alive = is_alive;
+}
+
 
 Player* player_find_by_id(Game* game, unsigned int player_id)
 {
@@ -175,6 +232,21 @@ static void draw_players(Game* game)
         color_hex_to_rgb(player->color, &r, &g, &b);
         paint_pacman(vec_get_x(player->pacman_pos), vec_get_y(player->pacman_pos), r, g, b, player->powered_up);
         paint_monster(vec_get_x(player->monster_pos), vec_get_y(player->monster_pos), r, g, b);
+    }
+}
+
+// Draws the fruit
+static void draw_fruit(Game* game)
+{
+    for (unsigned int i = 0; i < game->n_fruits; ++i)
+    {
+        Fruit* fruit = &game->fruits[i];
+        if (!fruit->is_alive)
+            continue;
+        if (fruit->fruit_type == FRUIT_CHERRY)
+            paint_cherry(vec_get_x(fruit->pos), vec_get_y(fruit->pos));
+        else
+            paint_lemon(vec_get_x(fruit->pos), vec_get_y(fruit->pos));
     }
 }
 
@@ -393,6 +465,7 @@ int main (int argc, char* argv[])
         clear_board(board_get_size_x(game->board), board_get_size_y(game->board));
         draw_bricks(game);
         draw_players(game);
+        draw_fruit(game);
         render_board();
 	}
 

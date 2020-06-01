@@ -31,4 +31,7 @@ void message_recv_player_id(int socket, unsigned int* player_id);
 // Receives a player ID corresponding to a disconnected player
 void message_recv_player_disconnect(int socket, unsigned int* player_id);
 
+// Receives the list of fruit
+void message_recv_fruit_list(int socket, Game* game);
+
 

@@ -288,7 +288,11 @@ void send_to_all_clients(Game* game, MessageType message_type, void* extra_data)
         {
             unsigned int* player_id = (unsigned int*)extra_data;
             message_send_player_disconnect(client_array[i]->socket, *player_id);
+            break;
         }
+        case MESSAGE_FRUIT_LIST:
+            message_send_fruit_list(client_array[i]->socket, game);
+            break;
 
         default:
             break;

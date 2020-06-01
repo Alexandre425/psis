@@ -27,7 +27,9 @@ enum _MessageType {
     // The list of players
     MESSAGE_PLAYER_LIST,
     // Alerts of a player's disconnection
-    MESSAGE_PLAYER_DISCONNECT
+    MESSAGE_PLAYER_DISCONNECT,
+    // The list of fruit
+    MESSAGE_FRUIT_LIST
     };
 
 // Ran when a misaligned message is detected in the receiving end

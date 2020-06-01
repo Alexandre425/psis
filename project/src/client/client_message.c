@@ -108,3 +108,25 @@ void message_send_player_disconnect(int socket, unsigned int player_id)
     message_send_uint32_t(socket, (uint32_t)player_id);
     message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
 }
+
+
+void message_recv_fruit_list(int socket, Game* game)
+{
+    uint16_t n_fruits = 0;
+    message_recv_uint16_t(socket, (uint16_t*)&n_fruits);
+    game_set_n_fruits(game, n_fruits);
+    for (unsigned int i = 0; i < n_fruits; ++i)
+    {
+        Fruit* fruit = game_get_fruit(game, i);
+        uint32_t fruit_type;
+        message_recv_uint32_t(socket, (uint32_t*)&fruit_type);
+        fruit_set_type(fruit, fruit_type);
+        int32_t x, y;
+        message_recv_int32_t(socket, (int32_t*)&x);
+        message_recv_int32_t(socket, (int32_t*)&y);
+        fruit_set_pos(fruit, x, y);
+        int32_t is_alive;
+        message_recv_int32_t(socket, (int32_t*)&is_alive);
+        fruit_set_is_alive(fruit, is_alive);
+    }
+}

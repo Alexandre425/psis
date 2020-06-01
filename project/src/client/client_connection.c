@@ -107,6 +107,11 @@ void* recv_from_server(void* _game)
             player_destroy(game, player_id);
             break;
         }
+        case MESSAGE_FRUIT_LIST:
+        {
+            message_recv_fruit_list(server_socket, game);
+            break;
+        }
         
         default:
             break;

@@ -74,6 +74,26 @@ void message_send_player_list(int socket, Game* game)
     message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
 }
 
+void message_send_fruit_list(int socket, Game* game)
+{
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_FRUIT_LIST);
+
+    unsigned int n_fruits;
+    Fruit** fruits = game_get_fruit_array(game, &n_fruits);
+
+    message_send_uint16_t(socket, (uint16_t)n_fruits);
+    for (unsigned int i = 0; i < n_fruits; ++i)
+    {
+        Fruit* fruit = fruits[i];
+        message_send_uint32_t(socket, (uint32_t)fruit_get_type(fruit));     // Send the type
+        message_send_int32_t(socket, (int32_t)fruit_get_pos_x(fruit));      // Send the position
+        message_send_int32_t(socket, (int32_t)fruit_get_pos_y(fruit));
+        message_send_int32_t(socket, (int32_t)fruit_get_is_alive(fruit));   // Send wether the fruit is alive or not
+    }
+    
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
+}
+
 void message_send_player_disconnect(int socket, unsigned int player_id)
 {
     message_send_uint16_t(socket, (uint16_t)MESSAGE_PLAYER_DISCONNECT);

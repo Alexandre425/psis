@@ -42,7 +42,7 @@ typedef struct _Game
     unsigned int n_players;
     Player** players;
     unsigned int n_fruits;
-    Fruit* fruits;
+    Fruit** fruits;
 } Game;
 
 Board* game_get_board(Game* game)
@@ -56,15 +56,23 @@ Player** game_get_player_array(Game* game, unsigned int* n_players)
     return game->players;
 }
 
-// Properly intializes the data for a fruit
-static void fruit_create(Game* game, Fruit* fruit, unsigned int fruit_type)
+Fruit** game_get_fruit_array(Game* game, unsigned int* n_fruits)
 {
+    *n_fruits = game->n_fruits;
+    return game->fruits;
+}
+
+// Creates a fruit and returns the pointer to the alloc'd struct
+static Fruit* fruit_create(Game* game, unsigned int fruit_type)
+{
+    Fruit* fruit = malloc_check(sizeof(Fruit));
     fruit->fruit_type = fruit_type;
     fruit->is_alive = 1;
     int x, y;                                       // Put the fruit in an empty space
     board_random_empty_space(game->board, &x, &y);
     fruit->pos = vec_create(x, y);
     board_set_tile(game->board, x, y, TILE_FRUIT);  // Put it on the board
+    return fruit;
 }
 
 // Destroys a fruit
@@ -73,7 +81,26 @@ static void fruit_destroy(Game* game, Fruit* fruit)
     if (fruit->is_alive)
         board_set_tile(game->board, vec_get_x(fruit->pos), vec_get_y(fruit->pos), TILE_EMPTY);
     free(fruit->pos);
+    free(fruit);
 }
+
+int fruit_get_pos_x(Fruit* fruit)
+{
+    return vec_get_x(fruit->pos);
+}
+int fruit_get_pos_y(Fruit* fruit)
+{
+    return vec_get_y(fruit->pos);
+}
+int fruit_get_is_alive(Fruit* fruit)
+{
+    return fruit->is_alive;
+}
+unsigned int fruit_get_type(Fruit* fruit)
+{
+    return fruit->fruit_type;
+}
+
 
 // Respawns a fruit
 static void fruit_respawn(Game* game, Fruit* fruit)
@@ -90,7 +117,7 @@ static Fruit* fruit_find_by_pos(Game* game, int x, int y)
 {
     for (unsigned int i = 0; i < game->n_fruits; ++i)
     {
-        Fruit* fruit = &game->fruits[i];
+        Fruit* fruit = game->fruits[i];
         if (x == vec_get_x(fruit->pos) && y == vec_get_y(fruit->pos))
             return fruit;
     }
@@ -110,13 +137,13 @@ static void fruit_count_update(Game* game, unsigned int n_players)
             game->fruits = malloc_check(new_n_fruits * sizeof(Fruit));
         else
             game->fruits = realloc_check(game->fruits, new_n_fruits * sizeof(Fruit));
-        fruit_create(game, &game->fruits[new_n_fruits - 1], FRUIT_CHERRY);      // Create two new fruits
-        fruit_create(game, &game->fruits[new_n_fruits - 2], FRUIT_LEMON);
+        game->fruits[new_n_fruits - 1] = fruit_create(game, FRUIT_CHERRY);     // Create two new fruits
+        game->fruits[new_n_fruits - 2] = fruit_create(game, FRUIT_LEMON);
     }
     if (new_n_fruits < game->n_fruits)      // Number of fruits has decreased
     {
-        fruit_destroy(game, &game->fruits[game->n_fruits - 1]);                 // Destroy two fruits
-        fruit_destroy(game, &game->fruits[game->n_fruits - 2]);
+        fruit_destroy(game, game->fruits[game->n_fruits - 1]);                 // Destroy two fruits
+        fruit_destroy(game, game->fruits[game->n_fruits - 2]);
     }
     
     game->n_fruits = new_n_fruits;
@@ -339,7 +366,7 @@ static void draw_fruit(Game* game)
 {
     for (unsigned int i = 0; i < game->n_fruits; ++i)
     {
-        Fruit* fruit = &game->fruits[i];
+        Fruit* fruit = game->fruits[i];
         if (!fruit->is_alive)
             continue;
         if (fruit->fruit_type == FRUIT_CHERRY)
@@ -427,11 +454,9 @@ static void handle_character_eat(Game* game, int eater_x, int eater_y, int eaten
     else
     {
         unsigned int eaten_tile = board_get_tile(game->board, eaten_x, eaten_y);
-        unsigned int eater_tile = board_get_tile(game->board, eater_x, eater_y);
         board_set_tile(game->board, eaten_x, eaten_y, TILE_EMPTY);  // Mark the eaten's tile as a valid random tile to respawn in
         board_random_empty_space(game->board, &res_x, &res_y);      // Determine the random respawn position
         Player* eaten_player = player_find_by_id(game, board_tile_type_to_player_id(eaten_tile));
-        Player* eater_player = player_find_by_id(game, board_tile_type_to_player_id(eater_tile));
         if (board_tile_type_is_pacman(eaten_tile) == 1)             // If a monster eats a Pacman
         {
             vec_set(eaten_player->pacman_pos, res_x, res_y);        // Pacman respawns
@@ -639,7 +664,7 @@ static void game_update(Game* game)
     // Respawn the fruits if enough time has passed
     for (unsigned int i = 0; i < game->n_fruits; ++i)
     {
-        Fruit* fruit = &game->fruits[i];
+        Fruit* fruit = game->fruits[i];
         if (!fruit->is_alive && time_diff_ms(fruit->eaten_time, now) > 2000)
             fruit_respawn(game, fruit);
     }
@@ -707,6 +732,7 @@ int main (void)
         {
             send_to_all_clients(game, MESSAGE_BOARD, NULL);
             send_to_all_clients(game, MESSAGE_PLAYER_LIST, NULL);
+            send_to_all_clients(game, MESSAGE_FRUIT_LIST, NULL);
         }
 
         // Clear the board to render over

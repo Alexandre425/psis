@@ -8,6 +8,8 @@
 
 typedef struct _Player Player;
 
+typedef struct _Fruit Fruit;
+
 typedef struct _Game Game;
 
 // Signals the client app (main thread) to quit in an orderly manner
@@ -20,11 +22,24 @@ Player** game_get_player_array(Game* game, unsigned int* n_players);
 int game_get_server_socket(Game* game);
 // Returns the game board
 Board* game_get_board(Game* game);
+// Returns the number of fruit
+unsigned int game_get_n_fruits(Game* game);
+// Returns the fruit in the provided index
+Fruit* game_get_fruit(Game* game, unsigned int index);
 
 // Sets the client's player id
 void game_set_player_id(Game* game, unsigned int player_id);
 // Sets the game's board
 void game_set_board(Game* game, Board* board);
+// Sets the number of fruit and allocates space in the fruit array if necessary
+void game_set_n_fruits(Game* game, unsigned int n_fruits);
+
+// Sets a fruit's position
+void fruit_set_pos(Fruit* fruit, int x, int y);
+// Sets a fruit's type
+void fruit_set_type(Fruit* fruit, unsigned int fruit_type);
+// Sets wether a fruit is alive
+void fruit_set_is_alive(Fruit* fruit, int is_alive);
 
 // Creates a player and returns the pointer to it
 Player* player_create(Game* game, unsigned int player_id);
