@@ -2,7 +2,8 @@
 CC = gcc
 
 #flags for individual object file compilation
-CFLAGS = -Wall -g -lpthread -lSDL2 -lSDL2_image -lm
+CFLAGS = -Wall -g
+LINKS = -lpthread -lSDL2 -lSDL2_image -lm
 #RELEASE
 # -Wall -O3
 #DEVELOPMENT
@@ -27,14 +28,14 @@ all: $(CLIENT) $(SERVER)
 
 #compile the client
 $(CLIENT): $(CLIENT_OBJ) $(COMMON_OBJ)
-	$(CC) $(CFLAGS) -o $(CLIENT) $(CLIENT_OBJ) $(COMMON_OBJ)
+	$(CC) $(CFLAGS) -o $(CLIENT) $(CLIENT_OBJ) $(COMMON_OBJ) $(LINKS)
 #client objects
 bin/client/%.o: src/client/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 #compile the server
 $(SERVER): $(SERVER_OBJ) $(COMMON_OBJ)
-	$(CC) $(CFLAGS) -o $(SERVER) $(SERVER_OBJ) $(COMMON_OBJ)
+	$(CC) $(CFLAGS) -o $(SERVER) $(SERVER_OBJ) $(COMMON_OBJ) $(LINKS)
 #server objects
 bin/server/%.o: src/server/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
