@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -85,4 +86,26 @@ int recv_all (int socket, void* buffer, size_t size)
         size -= recvd;
     }
     return 1;
+}
+
+void change_to_exec_dir(char* argv0)
+{
+    char* c = argv0, *last_slash = argv0;
+    while (*c != '\0')
+    {
+        if (*c == '/')
+            last_slash = c;
+        c++;
+    }
+    *(++last_slash) = '\0';
+    chdir(argv0);
+}
+
+int min (int a, int b)
+{
+    return a < b ? a : b;
+}
+int max (int a, int b)
+{
+    return a > b ? a : b;
 }

@@ -80,7 +80,10 @@ void message_recv_player_list(int socket, Game* game)
         {
             player = player_create(game, player_id);
         }
-        Color color;                                            // Receive the color
+        uint32_t score;
+        message_recv_uint32_t(socket, (uint32_t*)&score);       // Receive the score
+        player_set_score(player, score);
+        Color color;                                            // The color
         message_recv_uint32_t(socket, (uint32_t*)&color);
         player_set_color(player, color);
         int x, y;                                               // The pacman and monster positions
@@ -129,4 +132,15 @@ void message_recv_fruit_list(int socket, Game* game)
         message_recv_int32_t(socket, (int32_t*)&is_alive);
         fruit_set_is_alive(fruit, is_alive);
     }
+}
+
+void message_recv_print_scoreboard_order(int socket, Game* game)
+{
+    game_print_scoreboard(game);
+}
+
+void message_recv_server_full(int socket)
+{
+    puts("Failed to connect: Server is full!");
+    client_quit();
 }

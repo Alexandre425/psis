@@ -21,6 +21,7 @@ typedef struct _Player
 {
     unsigned int player_id;
     Color color;
+    unsigned int score;
     int powered_up;
     Vector* pacman_pos;
     Vector* monster_pos;
@@ -91,6 +92,20 @@ void game_set_n_fruits(Game* game, unsigned int n_fruits)
         }
     }
     game->n_fruits = n_fruits;
+}
+
+void game_print_scoreboard(Game* game)
+{
+    puts("PLAYER\t| SCORE");
+    for (unsigned int i = 0; i < game->n_players; ++i)
+    {
+        Player* player = game->players[i];
+        if (player->player_id == game->player_id)
+            fprintf(stdout, "%d (you)\t| %d\n", player->player_id, player->score);
+        else
+            fprintf(stdout, "%d\t| %d\n", player->player_id, player->score);
+    }
+    puts("");
 }
 
 
@@ -206,6 +221,10 @@ void player_set_color(Player* player, Color color)
 void player_set_power_up_state(Player* player, bool state)
 {
     player->powered_up = state;
+}
+void player_set_score(Player* player, unsigned int score)
+{
+    player->score = score;
 }
 
 
@@ -413,6 +432,9 @@ static void handle_user_input(int server_socket, Game* game ,SDL_Event event)
 
 int main (int argc, char* argv[])
 {
+    // Change to the correct working directory
+    change_to_exec_dir(argv[0]);
+
     // Verify correct argument usage
     if (argc != 3)
     {

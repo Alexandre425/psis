@@ -37,6 +37,7 @@ int board_tile_type_is_pacman(unsigned int tile_type);
 unsigned int board_player_id_to_tile_type(unsigned int player_id, int is_pacman);
 // Finds an empty space in the board at random
 // Puts the resulting coordinates in x, y
+// If there is no empty space, x and y become -1
 void board_random_empty_space(Board* board, int* x, int* y);
 // Checks if the target coordinates are out of bounds
 // Returns 1 if OOB, 0 otherwise

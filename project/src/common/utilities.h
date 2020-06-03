@@ -9,6 +9,10 @@ typedef uint32_t Color; // Color stored in 0xRRGGBB format
 
 // Converts a color in the hexadecimal format to the rgb format
 void color_hex_to_rgb(Color color, unsigned int* r, unsigned int* g, unsigned int* b);
+// Returns the smallest value, a or b
+int min (int a, int b);
+// Returns the biggest value, a or b
+int max (int a, int b);
 
 // Allocates, zeroes and checks SIZE bytes of memory
 void* malloc_check(size_t SIZE);
@@ -29,3 +33,7 @@ int send_all (int socket, void* buffer, size_t size);
 // Ensures all the data is received
 // Returns 1 on success, 0 on close, -1 on error
 int recv_all (int socket, void* buffer, size_t size);
+
+// Changes the working directory to the executable's
+void change_to_exec_dir(char* argv0);
+

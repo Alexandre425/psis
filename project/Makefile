@@ -2,7 +2,7 @@
 CC = gcc
 
 #flags for individual object file compilation
-CFLAGS = -Wall -g -lpthread -lSDL2 -lSDL2_image
+CFLAGS = -Wall -g -lpthread -lSDL2 -lSDL2_image -lm
 #RELEASE
 # -Wall -O3
 #DEVELOPMENT
@@ -18,8 +18,8 @@ SERVER_OBJ = $(patsubst src/server/%.c, bin/server/%.o,$(SERVER_SRC))
 COMMON_OBJ = $(patsubst src/common/%.c, bin/common/%.o,$(COMMON_SRC))
 
 #executable name
-CLIENT = bin/client_app
-SERVER = bin/server_app
+CLIENT = client_app
+SERVER = server_app
 
 ############################################################
 

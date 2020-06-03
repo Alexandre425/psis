@@ -34,6 +34,10 @@ void game_set_board(Game* game, Board* board);
 // Sets the number of fruit and allocates space in the fruit array if necessary
 void game_set_n_fruits(Game* game, unsigned int n_fruits);
 
+// Prints the scoreboard to stdout
+void game_print_scoreboard(Game* game);
+
+
 // Sets a fruit's position
 void fruit_set_pos(Fruit* fruit, int x, int y);
 // Sets a fruit's type
@@ -61,3 +65,5 @@ void player_set_mon_pos(Player* player, int x, int y);
 void player_set_color(Player* player, Color color);
 // Sets a player's power up state
 void player_set_power_up_state(Player* player, bool state);
+// Sets the player's score
+void player_set_score(Player* player, unsigned int score);

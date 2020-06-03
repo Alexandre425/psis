@@ -29,7 +29,11 @@ enum _MessageType {
     // Alerts of a player's disconnection
     MESSAGE_PLAYER_DISCONNECT,
     // The list of fruit
-    MESSAGE_FRUIT_LIST
+    MESSAGE_FRUIT_LIST,
+    // The order to print the scoreboard
+    MESSAGE_PRINT_SCOREBOARD,
+    // Alerts the server is full
+    MESSAGE_SERVER_FULL
     };
 
 // Ran when a misaligned message is detected in the receiving end

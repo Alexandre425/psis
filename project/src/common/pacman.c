@@ -68,7 +68,7 @@ unsigned int board_get_tile(Board* board, int x, int y)
 
 unsigned int board_tile_type_to_player_id(unsigned int tile_type)
 {
-    // Handles both pacman and monster due to integer division
+    // Handles both pacman and monster due to how integer division works
     return (tile_type - TILE_INVALID) / (int)2;
 }
 
@@ -86,12 +86,26 @@ unsigned int board_player_id_to_tile_type(unsigned int player_id, int is_pacman)
     return TILE_INVALID + (player_id*2) + is_pacman;
 }
 
+static int board_empty_space_exists(Board* board)
+{
+    for (unsigned int i = 0; i < vec_get_x(board->board_size); ++i)
+        for (unsigned int j = 0; j < vec_get_y(board->board_size); ++j)
+            if (board->board[i][j] == TILE_EMPTY)
+                return 1;   // 3rd level nesting: -10 points
+    return 0;
+}
+
 void board_random_empty_space(Board* board, int* x, int* y)
 {
+    if (!board_empty_space_exists(board))   // This prevents the mythical infinite loop
+    {
+        *x = -1; *y = -1;
+        return;
+    }
     do
     {
-        *x = rand() % vec_get_x(board->board_size);
-        *y = rand() % vec_get_y(board->board_size);
+        *x = rand() % vec_get_x(board->board_size); // It aint efficient
+        *y = rand() % vec_get_y(board->board_size); //  but it works
     }
     while (board->board[*x][*y] != TILE_EMPTY);
 }

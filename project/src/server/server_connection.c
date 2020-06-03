@@ -132,7 +132,6 @@ void* connect_to_clients (void* game)
     int client_socket;
     while (1)
     {
-        puts("Waiting for client");
         // Accept connections - blocks until a client connects
         client_socket = accept(listen_socket, NULL, NULL);
         if (client_socket == -1)
@@ -147,6 +146,12 @@ void* connect_to_clients (void* game)
                 perror("ERROR - Accept failed");
                 exit(EXIT_FAILURE);
             }
+        }
+        if (game_is_full(game))
+        {
+            puts("Server is full, denying connection request"); // F off, we're full
+            message_send_server_full(client_socket);
+            continue;
         }
 
         // Create a new client struct to pass to the receiver function
@@ -177,7 +182,7 @@ void* connect_to_clients (void* game)
 
 void* recv_from_client (void* _client)
 {
-    // Cast to Client
+    // Cast to Client (like that wasn't obvious)
     Client* client = (Client*)_client;
 
     // Handle the shutdown signal
@@ -235,14 +240,16 @@ void* recv_from_client (void* _client)
         {
             char move_dir;
             message_recv_movement(client->socket, (char*)&move_dir);
-            player_set_pac_move_dir(player, move_dir);
+            if (move_dir == 'w' || move_dir == 'a' || move_dir == 's' || move_dir == 'd' || move_dir == (char)0)
+                player_set_pac_move_dir(player, move_dir);
             break;
         }
         case MESSAGE_MOVE_MON:
         {
             char move_dir;
             message_recv_movement(client->socket, (char*)&move_dir);
-            player_set_mon_move_dir(player, move_dir);
+            if (move_dir == 'w' || move_dir == 'a' || move_dir == 's' || move_dir == 'd' || move_dir == (char)0)
+                player_set_mon_move_dir(player, move_dir);
             break;
         }        
         default:
@@ -252,7 +259,11 @@ void* recv_from_client (void* _client)
         // Receive the terminator
         message_recv_uint16_t(client->socket, (uint16_t*)&mt);
         if (mt != MESSAGE_TERMINATOR)
-            message_misaligned();
+        {
+            puts("ERROR - Message misaligned!");
+            fprintf(stdout, "Kicking client %d!\n", client->player_id);
+            break;
+        }
     }
     
     // Destroy the player who left
@@ -293,7 +304,8 @@ void send_to_all_clients(Game* game, MessageType message_type, void* extra_data)
         case MESSAGE_FRUIT_LIST:
             message_send_fruit_list(client_array[i]->socket, game);
             break;
-
+        case MESSAGE_PRINT_SCOREBOARD:
+            message_send_print_scoreboard_order(client_array[i]->socket);
         default:
             break;
         }

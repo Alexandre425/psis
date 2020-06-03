@@ -18,6 +18,9 @@ void message_send_board(int socket, Board* board);
 void message_send_player_list(int socket, Game* game);
 // Sends the player ID of a disconnecting client to a client
 void message_send_player_disconnect(int socket, unsigned int player_id);
-
 // Sends the list of fruit
 void message_send_fruit_list(int socket, Game* game);
+// Sends the order to print the scoreboard clientside
+void message_send_print_scoreboard_order(int socket);
+// Sends an alert for a full server
+void message_send_server_full(int socket);

@@ -63,6 +63,7 @@ void message_send_player_list(int socket, Game* game)
     {
         Player* player = players[i];
         message_send_uint16_t(socket, (uint16_t)player_get_id(player));             // Send the player id
+        message_send_uint32_t(socket, (uint32_t)player_get_score(player));          // Send the score
         message_send_uint32_t(socket, (uint32_t)player_get_color(player));          // Send the color
         message_send_int32_t(socket, (int32_t)player_get_pac_pos_x(player));        // Send the pacman's position (x then y)
         message_send_int32_t(socket, (int32_t)player_get_pac_pos_y(player));
@@ -98,5 +99,17 @@ void message_send_player_disconnect(int socket, unsigned int player_id)
 {
     message_send_uint16_t(socket, (uint16_t)MESSAGE_PLAYER_DISCONNECT);
     message_send_uint32_t(socket, (uint32_t)player_id);
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
+}
+
+void message_send_print_scoreboard_order(int socket)
+{
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_PRINT_SCOREBOARD);
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
+}
+
+void message_send_server_full(int socket)
+{
+    message_send_uint16_t(socket, (uint16_t)MESSAGE_SERVER_FULL);
     message_send_uint16_t(socket, (uint16_t)MESSAGE_TERMINATOR);
 }

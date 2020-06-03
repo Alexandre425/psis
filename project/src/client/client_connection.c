@@ -64,7 +64,7 @@ void* recv_from_server(void* _game)
         int ret = message_recv_uint16_t(server_socket, (uint16_t*)&mt);
         if (ret == 0)
         {
-            puts("Server closed!");
+            puts("Server disconnected!");
             break;
         }
         else if (ret == -1)
@@ -100,6 +100,12 @@ void* recv_from_server(void* _game)
             game_set_player_id(game, player_id);
             break;
         }
+        case MESSAGE_SERVER_FULL:
+        {
+            message_recv_server_full(server_socket);
+            break;
+        }
+
         case MESSAGE_PLAYER_DISCONNECT:
         {
             unsigned int player_id;
@@ -112,6 +118,9 @@ void* recv_from_server(void* _game)
             message_recv_fruit_list(server_socket, game);
             break;
         }
+        case MESSAGE_PRINT_SCOREBOARD:
+            message_recv_print_scoreboard_order(server_socket, game);
+            break;
         
         default:
             break;

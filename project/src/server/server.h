@@ -19,6 +19,8 @@ Player** game_get_player_array(Game* game, unsigned int* n_players);
 // Returns the fruit array
 // Puts the number of fruit in n_fruits
 Fruit** game_get_fruit_array(Game* game, unsigned int* n_fruits);
+// Returns 1 if the server is at max player capacity, 0 otherwise
+int game_is_full(Game* game);
 
 // Returns a fruit's x position
 int fruit_get_pos_x(Fruit* fruit);
@@ -36,6 +38,8 @@ void player_destroy(Game* game, unsigned int player_id);
 
 // Returns a player's ID
 unsigned int player_get_id(Player* player);
+// Returns a player's score
+unsigned int player_get_score(Player* player);
 // Returns a player's pacman x position
 int player_get_pac_pos_x(Player* player);
 // Returns a player's pacman y position
