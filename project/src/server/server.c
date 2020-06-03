@@ -702,7 +702,7 @@ static void game_update(Game* game)
 
             handle_pacman_move(game, player, tgt_x, tgt_y);
         }
-        else if (time_diff_ms(player->pacman_last_move_time, now) > 5000)     // Inactivity counter
+        else if (time_diff_ms(player->pacman_last_move_time, now) > 30000)     // Inactivity counter
         {
             handle_inactivity_move(game, player, 1);
         }
