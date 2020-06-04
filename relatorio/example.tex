@@ -1,0 +1,585 @@
+\documentclass[a4paper,2pt]{report}
+
+\usepackage[a4paper, total={6in, 9in}]{geometry}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{pdfpages}
+\usepackage{indentfirst}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subfig}
+
+\graphicspath{ {./img/} }
+\renewcommand{\chaptername}{Parte}
+\renewcommand{\contentsname}{Índice}
+\renewcommand{\figurename}{Figura}
+\renewcommand{\tablename}{Tabela}
+
+
+\setlength{\parskip}{6pt}
+
+\begin{document}
+
+\begin{titlepage}
+    \begin{center}
+        \vspace*{3cm}
+ 
+        \LARGE
+        \textbf{Instituto Superior Técnico}
+        \vskip 0.4cm
+ 
+        \Large{MEEC}
+        \vskip 0.2cm
+
+        \Large{Electrónica I}
+        \vskip 3cm
+        
+
+ 
+        \Huge{\textbf{3º Trabalho de Laboratório}}
+        \vskip 0.5cm
+
+        \huge{\textbf{Par Diferencial}}
+        \vskip 0.5cm
+
+ 
+        \vfill
+ 
+        \large
+        \textbf{Grupo Nº 55}\\
+        \vspace{0.3cm}
+        Alexandre Rodrigues, 90002\\
+        Diogo Meneses, 86975\\
+        Diogo Vaz, 95509\\
+        \vspace{1cm}
+
+        \textbf{Turno:} 4ªf 17h30
+
+    \end{center}
+\end{titlepage}
+
+\tableofcontents
+
+%%%%%%%%%%%%%
+%% PARTE 1 %%
+%%%%%%%%%%%%%
+\chapter{Análise Teórica}
+\addtocounter{chapter}{2}
+
+\par O circuito a considerar neste trabalho, apresentado abaixo, é o par diferencial.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=3.5in]{img/circuito_geral.png}
+    \caption{Circuito par diferencial}
+    \label{}
+\end{figure}
+
+\par Os parâmetros fornecidos do circuito são os seguintes:
+
+\begin{table}[H]
+    \centering
+    \resizebox{4.5in}{!}{%
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+    \hline
+    \rowcolor[HTML]{C0C0C0} 
+    \(V_{BE_{ON}}(V)\) & \(\beta_F\) & \(V_A(V)\) & \(V_T(V)\) & \(R_{E1}(\Omega)\) & \(R_{E2}(\Omega)\) & \(V_{CC}(V)\) & \(I_{C1} = I_{C2}(mA)\) & \(A_{D}\) \\ \hline
+    0.7 & 105 & 100 & 0.025 & 100 & 100 & 6 & 1.3 & 24 \\ \hline
+    \end{tabular}%
+    }
+\end{table}
+\section{Dimensionamento de \(R_{C1}\), \(R_{C2}\) e \(R_{REF}\)}
+\par Pelas características do circuito, em repouso, a corrente \(I_{REF}\) divide-se igualmente pelos ramos do par diferencial, sendo que (3.1):
+\begin{equation}
+    \begin{cases}
+        I_{B} << \beta_F I_{B} \\
+        I_{REF} = I_{C1} + I_{C2} = 2.6\textit{mA}
+    \end{cases}
+\end{equation}
+
+\par Observando o modo como o transistor Q4 está ligado, sabemos que (3.2):
+\begin{equation}
+    V_{CE4} = V_{BE4} = V_{BE_{ON}}
+\end{equation}
+
+\par Com isto, é possível obter o valor da resistência que fornece a corrente pretendida (3.3):
+\begin{equation}
+    2V_{CC} = R_{REF}I_{REF} + V_{BE4} \Leftrightarrow R_{REF} = \frac{2V_{CC} - V_{BE_{ON}}}{I_{REF}} = 4346\Omega
+\end{equation}
+\par Normalizando a resistência à série E24 obtemos \(R_{REF} = 4.3k\Omega\).
+
+\par Devido à simetria do circuito, é possível aplicar o teorema da bisseção, considerando que se encontra uma massa virtual no nó acima de Q3 (a tensão neste nó é constante).
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=2.5in]{img/3lab.png}
+    \caption{Bisseção do par diferencial}
+    \label{}
+\end{figure}
+
+\par Calculando os parâmetros incrementais do circuito, vem que (3.4):
+\begin{equation}
+    \begin{cases}
+        g_m = \frac{I_C}{V_T} = 52\textit{mS} \\
+        r_\pi = \frac{\beta}{g_m} = 2019\Omega
+    \end{cases}
+\end{equation}
+
+\begin{figure}%
+    \centering
+    \subfloat[]{{\includegraphics[width=2.8in]{img/1lab.png} }}%
+    \qquad
+    \subfloat[]{{\includegraphics[width=2.6in]{img/2lab.png} }}%
+    \caption{Esquemas incrementais do par diferencial}%
+    \label{fig:example}%
+\end{figure}
+
+
+\par Através do circuito incremental resultante, presente na figura 3.3, obtemos as suas equações características (3.5):
+\begin{equation}
+    \begin{cases}
+        v_{o1} = -\beta i_b R_C \\
+        \frac{v_d}{2} = i_b(r_\pi + R_E(\beta+1)) \\
+        v_{o2} = -\beta i_b R_C \\
+        -\frac{v_d}{2} = i_b(r_\pi + R_E(\beta+1)) 
+    \end{cases}
+\end{equation}
+Sendo que \(R_{E1} = R_{E2} = R_E\) e \(R_{C1} = R_{C2} = R_C\)
+
+\par Sabendo que o ganho diferencial vem da junção dos ganhos de cada ramo (3.6):
+\begin{equation}
+    A_d = A_{d1} - A_{d2} = \frac{v_{o12}}{v_d} = \frac{-\beta R_C}{r_\pi + R_E(\beta + 1)} \Leftrightarrow R_C = 2884 \Omega
+\end{equation}
+
+\par Normalizando a resistência obtida, vem que \(R_C = 3k\Omega\)
+
+\section{Resistência dinâmica da fonte \(R_F\)}
+\par A resistência dinâmica é obtida através do esquema incremental da figura 3.3, fazendo \(v_i = 0\) (3.7):
+\begin{equation}
+    R_F = \frac{v_o}{v_i} = r_{o} = \frac{V_A}{I_{REF}} = 38.46k\Omega
+\end{equation}
+
+\section{Determinação do ponto de funcionamento em repouso}
+\par A partir dos parâmetros dimensionados, é agora feito o cálculo do ponto de funcionamento em repouso do circuito.
+
+\par Quanto à fonte de corrente, vem que (3.8):
+\begin{equation}
+    I_{REF} = \frac{2V_{CC}-V_{BE1}}{R_{REF}} = 2.628\textit{mA}
+\end{equation}
+
+\par Considerando que a corrente de base é muito inferior à de colector vem que (3.9):
+\begin{equation}
+    I_F = I_{REF}
+\end{equation}
+
+\par A corrente divide-se pelos dois ramos do par diferencial, pelo que sabemos que \(I_C\) é aproximadamente dado por (3.10):
+\begin{equation}
+    I_{C1} = I_{C2} \approx \frac{I_{F}}{2} = 1.314\textit{mA}
+\end{equation}
+
+\par As tensões em repouso obtêm-se expeditamente através de(3.11):
+\begin{equation}
+    V_{O1} = V_{O2} = V_{CC} - I_C R_C = 2.058V
+\end{equation}
+
+\par Dado que as tensões de cada ramo são iguais, a sua tensão diferencial \(V_{O12}\) é nula.
+
+\section{Representação gráfica das características de transferência}
+
+\par Considerando que, ao estar na ZAD, as correntes de colector e emissior são quase iguais nos transistores, vem que (3.12):
+\begin{equation}
+    v_D = v_1 - v_2 = (v_{B1} + R_E i_{E1}) - (v_{B2} + R_E i_{E2})
+\end{equation}
+
+\par Considerando ainda que a tensão que cai sobre as resistências de emissor é muito superior às tensões de base, a expressão simplifica para (3.13):
+\begin{equation}
+    v_D \approx R_E(i_{E1} - i_{E2})
+\end{equation}
+
+\par Pela lei dos nós vem que (3.14):
+\begin{equation}
+    \begin{cases}
+        i_{C1} = \frac{I_F}{2} - \frac{i_{C1} - i_{C2}}{2} \\
+        i_{C2} = \frac{I_F}{2} + \frac{i_{C1} - i_{C2}}{2} 
+    \end{cases}
+    \Leftrightarrow
+    \begin{cases}
+        i_{C1} = \frac{I_F}{2} - \frac{v_D}{2R_E} \\
+        i_{C2} = \frac{I_F}{2} + \frac{v_D}{2R_E}
+    \end{cases}
+\end{equation}
+
+\par Pela lei das malhas, vem também que (3.15):
+\begin{equation}
+    \begin{cases}
+        v_{01} = V_{CC} - R_C i_{C1} \\
+        v_{02} = V_{CC} - R_C i_{C2} \\
+        v_{012} = - R_C \frac{v_D}{R_E}
+    \end{cases}
+\end{equation}
+
+\par Tendo presentes todas as equações necessárias, basta apenas determinar a zona linear do amplificador. Devido à presença de \(R_E\) (degeneração de emissor), o limite da zona linear é dado por (3.16):
+\begin{equation}
+    |v_D| < R_E I_F = 262.8\textit{mV}
+\end{equation}
+
+\par Fora da zona línear a característica de transferência será constante.
+
+\par Para \(v_D < -262.8\textit{mV}\), Q1 fica ao corte, e a corrente \(I_F\) passa exclusivamente por Q2, obtendo (3.17):
+\begin{equation}
+    \begin{cases}
+        v_{01} = V_{CC} = 6V \\
+        v_{02} = V_{CC} - I_F R_C = -1.884V \\
+        v_{012} = - R_C \frac{v_D}{R_E} = 7.884V
+    \end{cases}
+\end{equation}
+
+\par \par Para \(v_D > 262.8\textit{mV}\), Q2 fica ao corte, e a corrente \(I_F\) passa exclusivamente por Q1, obtendo (3.18):
+\begin{equation}
+    \begin{cases}
+        v_{01} = V_{CC} - I_F R_C = -1.884V \\
+        v_{02} = V_{CC} = 6V \\
+        v_{012} = - R_C \frac{v_D}{R_E} = -7.884V
+    \end{cases}
+\end{equation}
+
+\par Na zona línear, as equações determinadas em (3.15) são válidas. Substituindo nelas (3.16), vem que (3.19):
+\begin{equation}
+    \begin{cases}
+        v_{01} = V_{CC} - R_C(\frac{I_F}{2} - \frac{v_D}{2R_E}) \\
+        v_{02} = V_{CC} - R_C(\frac{I_F}{2} + \frac{v_D}{2R_E}) \\
+        v_{012} = - R_C \frac{v_D}{R_E}
+    \end{cases}
+    \Leftrightarrow
+    \begin{cases}
+        v_{01} = 2.058 - 15 v_D \\
+        v_{01} = 2.058 + 15 v_D \\
+        v_{012} = -30v_D
+    \end{cases}
+\end{equation}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 5in]{img/transferencia.jpg}
+    \caption{Funções de transferência \(v_{01}(v_D)\), \(v_{02}(v_D)\) e \(v_{012}(v_D)\)}
+    \label{}
+\end{figure}
+
+\par Devido às simplificações efetuadas, os valores de ganho presentes nas funções de transferência não são exatos.
+
+\section{Análise do esquema incremental}
+\subsection{Cálculo dos ganhos diferenciais}
+
+\par Através da figura 3.3, onde se encontra o esquema incremental de cada ramo do circuito, obtemos as seguintes equações (3.20):
+
+\begin{equation}
+    \begin{cases}
+        v_0 = \beta i_b R_C \\
+        \frac{v_d}{2} = i_b(r_\pi + (\beta + 1)R_E) \\
+        A_{d1} = -\frac{v_0}{v_d} = -\frac{\beta R_C}{2(r_\pi + (\beta + 1)R_E)} = -12.48 \\
+        A_{d2} = \frac{v_0}{v_d} = \frac{\beta R_C}{2(r_\pi + (\beta + 1)R_E)} = 12.48 \\
+        A_d = A_{d1} - A_{d2} = -24.94
+    \end{cases}
+\end{equation}
+
+\par O valor assemelha-se ao pretendido, o desvio devendo-se à normalização das resistências.
+
+\subsection{Cálculo da resistência de entrada}
+
+\par A resistência de entrada é a resistência observada entre os dois terminais de entrada, ou seja, a resistência dentre as bases dos transistores do par diferencial. Já que as resistências de emissor estão ligadas uma à outra, o caminho entre as duas bases passa por cada uma das resistências \(r_\pi\), bem como por ambas as resistências de emissor (sendo que estas vêm aumentadas por um fator de \((\beta + 1)\)).
+\par A resistência de entrada \(R_i\) é então dada por (3.21):
+
+\begin{equation}
+    R_i = 2r_\pi + 2(\beta + 1)R_E = 25.238k\Omega
+\end{equation}
+
+\subsection{Cálculo do ganho de modo comum}
+
+\par O cálculo do ganho de modo comum pode ser feito através da análise do circuito incremental da figura 3.3, mas com \(2R_F\) em série com a resistência de emissor. A razão pela qual a resistência da fonte vem afetada de um fator de dois é devido ao teorema da bisseção. Como a resistência é partilhada por ambos os ramos, se os juntássemos esta apareceria em paralelo, ou seja, equivalente a uma resistência de metade do valor. O fator de 2 faz com que a junção dos dois circuitos provenientes da bisseção seja equivalente ao circuito original.
+
+\par Temos então que o ganho de modo comum é dado por (3.22):
+
+\begin{equation}
+    \begin{cases}
+        v_0 = -\beta i_b R_C \\
+        v_c = i_b(r_\pi + (\beta + 1)(R_E + 2R_F)) \\
+        A_{c1} = A_{c2} = \frac{v_0}{v_c} = \frac{-\beta R_C}{2(r_\pi + (\beta + 1)(R_E + 2R_F))} = -1.929\times10^{-2} \\
+        A_c = A_{c1} - A_{c2} = 0
+    \end{cases}
+\end{equation}
+
+\subsection{Cálculo da resistência de entrada de modo comum}
+
+\par Considerando o mesmo circuito da alínea anterior vem que (\ref{r_modo_comum}):
+\begin{equation}
+    \begin{cases}
+        v_c = i_b(r_\pi + (\beta + 1)(R_E + 2R_F)) \\
+        R_{ic} = \frac{v_c}{2i_b} = 4.08M\Omega
+    \end{cases}
+    \label{r_modo_comum}
+\end{equation}
+
+\section{Determinação do rácio de rejeição de modo comum}
+
+\par Através dos resultados obtidos em (3.20) e (3.22) vem que (\ref{cmrr}):
+\begin{equation}
+    \begin{cases}
+        \textit{CMRR} = \frac{|A_d|}{|A_c|} = +\infty \\
+        \textit{CMRR1} = \textit{CMRR2} = \frac{|A_{d1}|}{|A_{c1}|} = 646.97 = 56.22\textit{dB}
+    \end{cases}
+    \label{cmrr}
+\end{equation}
+
+\section{Determinação da tensão de offset e desvio máximo}
+\par Considerando que existe uma tolerância de 5\% para o valor das resistências, a maior assimetria possível ocorre quando (\ref{rc_desvio}):
+\begin{equation}
+    \begin{cases}
+        R_{C1A} = 0.95R_C \\
+        R_{C2A} = 1.95R_C 
+    \end{cases}
+    \label{rc_desvio}
+\end{equation}  
+
+\par Isto provoca uma diferença nas tensões de saída em repouso, sendo que estas são (\ref{v0_desvio}):
+\begin{equation}
+    \begin{cases}
+        v_{01} = V_{CC} - \frac{R_{C1A} I_F}{2} = 2.2551 \\
+        v_{02} = V_{CC} - \frac{R_{C2A} I_F}{2} = 1.8609 \\
+        v_{012} = 0.3942V
+    \end{cases}
+    \label{v0_desvio}
+\end{equation}
+
+\par De modo a obtermos a tensão de offset fazemos (\ref{vos}):
+\begin{equation}
+    V_{OS} = \frac{v_{012}}{A_d} = 15.79\textit{mV}
+    \label{vos}
+\end{equation}
+
+
+%%%%%%%%%%%%%
+%% PARTE 2 %%
+%%%%%%%%%%%%%
+\chapter{Simulação \textit{LTSpice}}
+
+\section{Ponto de funcionamento em repouso}
+
+\par Para \(v_d = v_c = 0\), obtiveram-se os valores de \(I_{C1}\), \(I_{C2}\), \(I_{F}\), \(I_{\textit{REF}}\), \(V_{01}\) e \(V_{02}\) (correntes e tensões em repouso).
+
+\par Os valores simulados para o PFR estão presentes abaixo na figura \ref{4_1}, e mais detalhadamente na tabela de comparação de resultados, na secção final do relatório (resultados experimentais).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=3in]{img/4/4_1.JPG}
+    \caption{Simulação do ponto de funcionamento em repouso}
+    \label{4_1}
+\end{figure}
+
+\section{Característica de transferência do circuito}
+
+\par Fez-se um varrimento da tensão \(v_d\) entre -1V e +1V, obtendo-se assim a característica de transferência do circuito, presente na figura \ref{4_2}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 5in]{img/4/4_2.JPG}
+    \caption{Característica de transferência do circuito, \(v_{01}(v_d)\), \(v_{02}(v_d)\) e \(v_{012}(v_d)\)}
+    \label{4_2}
+\end{figure}
+
+\section{Ganhos e resistência de entrada do modo diferencial}
+
+\par Realizou-se uma análise AC com frequência de sinal de entrada \(v_d\) entre 10Hz e 100Hz, e mediram-se os diferentes valores de ganhos de tensão e a resistência de entrada de modo diferencial \(R_{id}\) a uma frequência intermédia (55Hz). Os resultados estão presentes nas figuras \ref{4_3_ad1} a \ref{4_3_rid}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/4/4_3_Ad1.JPG}
+    \caption{Ganho diferencial do ramo esquerdo \(A_{d1}\)}
+    \label{4_3_ad1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/4/4_3_Ad2.JPG}
+    \caption{Ganho diferencial do ramo esquerdo \(A_{d2}\)}
+    \label{4_3_ad2}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/4/4_3_Ad.JPG}
+    \caption{Ganho diferencial entre os dois ramos \(A_d\)}
+    \label{4_3_ad}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/4/4_3_Rid.JPG}
+    \caption{Resistência de entrada do modo diferencial \(R_{id}\)}
+    \label{4_3_rid}
+\end{figure}
+
+\section{Resposta do circuito a uma entrada sinusoidal diferencial}
+
+\par Aplicou-se um sinal sinusoidal a \(v_d\), com 100mV de amplitude e 500Hz de frequência, e efetuou-se uma análise no domínio do tempo durante 3 períodos (6ms). Os resultados obtidos estão na figura \ref{4_4}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 5in]{img/4/4_4.JPG}
+    \caption{Formas de onda de \(v_{01}\), \(v_{02}\), \(v_{d}\) e \(v_{012}\) (respetivamente)}
+    \label{4_4}
+\end{figure}
+
+\section{Resposta do circuito a uma entrada sinusoidal comum}
+
+\par Aplicou-se um sinal sinusoidal a \(v_c\), com 100mV de amplitude e 500Hz de frequência, e efetuou-se uma análise no domínio do tempo durante 3 períodos (6ms). Os resultados obtidos estão na figura \ref{4_5}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 5in]{img/4/4_5.JPG}
+    \caption{Formas de onda de \(v_{01}\), \(v_{02}\), \(v_{012}\) e \(v_{c}\) (respetivamente)}
+    \label{4_5}
+\end{figure}
+
+\par É de notar que as formas de onda de \(v_{01}\) e \(v_{02}\) se encontram sobrepostas, daí o ganho diferencial ser nulo.
+
+\section{Ganhos e resistência de entrada do modo comum}
+
+\par Realizou-se uma análise AC com frequência de sinal de entrada \(v_c\) entre 10Hz e 100Hz, e mediram-se os diferentes valores de ganhos de tensão e a resistência de entrada de modo diferencial \(R_{id}\) a uma frequência intermédia (55Hz). Os resultados estão presentes nas figuras \ref{4_6_ad1} a \ref{4_6_rid}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/4/4_6_Ac1.JPG}
+    \caption{Ganho comum do ramo esquerdo \(A_{d1}\)}
+    \label{4_6_ad1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/4/4_6_Ac2.JPG}
+    \caption{Ganho comum do ramo esquerdo \(A_{d2}\)}
+    \label{4_6_ad2}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/4/4_6_Ac.JPG}
+    \caption{Ganho comum entre os dois ramos \(A_d\)}
+    \label{4_6_ad}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/4/4_6_Ric.JPG}
+    \caption{Resistência de entrada do modo comum \(R_{ic}\)}
+    \label{4_6_rid}
+\end{figure}
+
+\section{Rejeição de modo comum}
+
+\par As relações de rejeição de modo comum, CMRR, em dB, são dadas por (\ref{cmrr_sim}):
+\begin{equation}
+    \begin{cases}
+        \textit{CMRR}_{1,2} = 20\log \frac{|A_{d1,2}|}{|A_{c1,2}|} = 50.24\textit{dB} \\
+        \textit{CMRR} = 20\log \frac{|A_{d}|}{|A_{c}|} = +\infty\textit{dB}
+    \end{cases}
+    \label{cmrr_sim}
+\end{equation}
+
+\section{Assimetrias, tensão de desvio e tensão de offset}
+
+\par Para maximizar \(V_{012}\) no PFR, alteraram-se as resistências para \(R_{C1} = 2.85k\Omega\) e \(R_{C2} = 2.85k\Omega\). Fez-se então um varrimento de \(v_d\) entre -20mV e 20mV obtendo-se o resultado da figura \ref{4_8}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 5in]{img/4/4_8.JPG}
+    \caption{Resposta \(v_{012}(v_d)\) com carga assimétrica no par diferencial}
+    \label{4_8}
+\end{figure}
+
+\par Sendo que \(v_{012}\) se anula quando \(v_d = 16\textit{mV}\), esta última é a tensão de offset.
+
+%%%%%%%%%%%%%
+%% PARTE 3 %%
+%%%%%%%%%%%%%
+\chapter{Resultados Experimentais}
+
+\section{Ponto de funcionamento em repouso}
+
+\par As bases dos transistores foram ligadas à massa, obtendo assim o ponto de funcionamento em repouso do circuito. Os valores obtidos estão na tabela de comparação de resultados.
+
+\section{Característica de transferência}
+
+\par Com \(v_2\) ainda ligado à massa, aplica-se um sinal sinusoidal com 1V de amplitude no terminal \(v_1\). Obtiveram-se os resultados abaixo, da figura \ref{5_2_1} à \ref{5_2_4}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/5/scope_2.png}
+    \caption{Gráfico dos sinais \(v_{01}(t)\) e \(v_1(t)\)}
+    \label{5_2_1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/5/scope_0.png}
+    \caption{Característica de transferência \(v_{01}(v_1)\)}
+    \label{5_2_2}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/5/scope_3.png}
+    \caption{Gráfico dos sinais \(v_{02}(t)\) e \(v_1(t)\)}
+    \label{5_2_3}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/5/scope_1.png}
+    \caption{Característica de transferência \(v_{02}(v_1)\)}
+    \label{5_2_4}
+\end{figure}
+
+\section{Determinação dos ganhos diferenciais}
+
+\par De modo a obter os valores de ganho, foi aplicado um sinal sinusoidal fraco (100mV de amplitude) a \(v_1\). Os rácios entre a amplitude de \(v_1\) e as amplitudes de saída representam os ganhos pretendidos. As formas de onda obtidas estão abaixo na figura \ref{5_3}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 4in]{img/5/scope_5.png}
+    \caption{Gráfico dos sinais \(v_1(t)\) a amarelo, \(v_{01}(t)\) a azul, \(v_{02}(t)\) a verde e \(-v_{012}(t)\) a roxo}
+    \label{5_3}
+\end{figure}
+
+\par \textbf{Nota:} A onda a roxo corresponde à operação \(v_{02} - v_{01}\), que resulta no sinal \(v_{021}\), ou \(-v_{012}\). Este sinal é o simétrico do pretendido (que é \(v_{012}\)), sendo que para obter o resultado esperado se deve inverter esta onda. Este engano não impede o cálculo do ganho diferencial, sendo que precisamos apenas do seu módulo.
+
+\section{Análise e comparação de resultados}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 5in]{img/tabela.png}
+    \caption{Tabela de comparação de resultados}
+    \label{}
+\end{figure}
+
+\subsection{Causas gerais de erro}
+\par É de notar que certos fatores afetam todos os resultados obtidos. Para os resultados teóricos, o desprezo do efeito de Early e das correntes de base dos transistores são os principais fatores. No caso da simulação, que não despreza os fatores anteriores, há que considerar que o método iterativo utilizado não é exato. Já na montagem experimental, inúmeros fatores afetam os resultados obtidos, desde tolerâncias nos valores das resistência e transistores até à temperatura dos componentes.
+
+\subsection{Ponto de funcionamento em repouso}
+\par Os resultados teóricos encontram-se muito próximos dos simulados, indicando que as aproximações utilizadas (nomeadamente considerar que a corrente de base dos transistores é nula) não causam desvios significativos.
+\par A diferença mais significativa ocorre no resultado experimental da tensão de saída. Este desvio deve-se principalente às tolerâncias das resistências, bem como os parâmetros dos transistores, que também possuem alguma dispersão. É de notar também uma ligeira assimetria nestas tensões.
+
+\subsection{Característica de transferência}
+\par Os gráficos para a característica de transferência do circuito mostram um comportamento línear em redor de \(v_d = 0\), até a saída saturar, como seria de esperar. Os gráficos obtidos pela análise teórica, experimental e pela simulação são coerentes.
+
+\subsection{Ganho diferencial}
+\par A diferença entre os ganhos obtidos teóricamente e os simulados é insignificante, pelo que as aproximações feitas, nomeadamente o desprezo de \(r_o\), não causaram um desvio significativo nos resultados. A discrepância para o resultado experimental deve-se a vários fatores, como as tolerâncias das resistência e a dispersão nos parâmetros dos transistores. Tambés se notaram interferências bastante fortes nos sinais, devidas a, entre outras razões, maus contactos entre os terminais dos componentes e dos fios. Isto será uma das principais causas nos erros observados. Estes foram parcialmente mitigadps através do uso de uma resistência em série com o osciloscópio.
+
+\subsection{Resistência de entrada diferencial}
+\par A diferença relativa entre os valores é mais uma vez muito pequena, pelo que as simplificações e aproximações feitas conduzem a um resultado bem aproximado do caso real.
+
+\subsection{Ganho de modo comum}
+\par Neste caso, os dados teóricos e simulados já apresentam uma diferença significativa. No entanto, é de notar que esta diferença relativa acaba por ser insignificante face à diferença absoluta. O ganho comum é de valor tão pequeno face ao diferencial, que mesmo um erro de 100\% tem pouca significância. 
+\par Na aproximação utilizada, volta-se a desprezar \(r_o\), que se considerou muito grande face a \(R_E\) em análises anteriores. No entanto, \(r_o\) é agora comparado com resistência dinâmica da fonte, sendo que já não é tão relativamente grande, e vai portanto ter um efeito significativo no circuito. O facto de ter sido desprezado neste caso causa então um erro considerável.
+
+\subsection{CMRR}
+\par Devido às discrepâncias encontradas nos valores de ganho comum, o valor de CMRR vai também diferir bastante do resultado teórico para o simulado. O erro (em rácio línear, não logarítmico) é de cerca de 100\%, tal como o erro dos valores de ganho comum.
+
+\subsection{Assimetria e tensões de desvio e offset}
+\par Para as tensões no circuito assimétrico, a sua diferença relativa entre resultados teóricos e simulados volta a ser muito pequena. A pequena discrepância deve-se a fatores gerais, como erros do modelo iterativo da simulação e aproximações anteriores.
+
+\section{Conclusão}
+\par A análise do par diferencial permite consolidar conhecimentos sobre o mesmo, como a aplicação do teorema da bisseção, e ainda sobre fontes de corrente de alta impedância.
+\par Todas as diferenças encontradas entre os diferentes métodos de obtenção de resultados foram justificadas, e estes erros estão dentro de intervalos aceitáveis. 
+\par A montagem experimental permite entender as assímetrias presentes no processo de fabrico de amplificadores operacionais, bem como os métodos utilizados para corrigir este problema.
+
+\end{document}
