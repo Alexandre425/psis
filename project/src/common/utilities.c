@@ -8,7 +8,7 @@
 
 void color_hex_to_rgb(Color color, unsigned int* r, unsigned int* g, unsigned int* b)
 {
-    // Bitwise and with the respective byte, make it the least significant byte
+    // Bitwise AND with the respective byte, then shift it right to make it the LSB
     *b = (color & 0x0000FF) >> 0;
     *g = (color & 0x00FF00) >> 8;
     *r = (color & 0xFF0000) >> 16;
@@ -91,14 +91,14 @@ int recv_all (int socket, void* buffer, size_t size)
 void change_to_exec_dir(char* argv0)
 {
     char* c = argv0, *last_slash = argv0;
-    while (*c != '\0')
+    while (*c != '\0')          // While the end of the string hasn't been reached
     {
-        if (*c == '/')
+        if (*c == '/')          // Register the location of a forward slash if found
             last_slash = c;
         c++;
     }
-    *(++last_slash) = '\0';
-    chdir(argv0);
+    *(++last_slash) = '\0';     // Terminate the string at the last slash
+    chdir(argv0);               // Change directory to the resulting string
 }
 
 int min (int a, int b)
