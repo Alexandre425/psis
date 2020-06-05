@@ -15,10 +15,6 @@ A cor e lida no formato hexadecimal 0xRRGGBB. Vermelho sera entao ff0000, roxo f
 Exemplo, com loopback protocol:
     ./client_app 127.0.0.1:25000 ff0000
 
-Para gerar uma board nova:
-    Compilar e correr o board-drawer (o qual nao foi alterado)
-    O servidor le a board resultante nessa mesma pasta
-    
 Controlos:
     WASD - Monstro
     Rato - Pacman

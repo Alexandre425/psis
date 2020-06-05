@@ -1,0 +1,13 @@
+12 12
+ B   BBB BBB
+ B B   B    
+ B B B   BB 
+ B B B B B  
+ B B   B   B
+ B   B B B  
+   BBB B BB 
+ B   B B    
+ B B   B BB 
+ B B B B B  
+ B B B     B
+ B     B B  
