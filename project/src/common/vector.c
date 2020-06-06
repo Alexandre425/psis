@@ -26,32 +26,17 @@ void vec_destroy (Vector* vec)
 
 void vec_set (Vector* vec, int x, int y)
 {
-    if (!vec)
-    {
-        puts("ERROR - Attempted to set a null vector");
-        exit(EXIT_FAILURE);
-    }
     vec->x = x;
     vec->y = y;
 }
 
 void vec_set_x (Vector* vec, int x)
 {
-    if (vec == NULL)
-    {
-        puts("ERROR - Attempted to set a null vector");
-        exit(EXIT_FAILURE);
-    }
     vec->x = x;
 }
 
 void vec_set_y (Vector* vec, int y)
 {
-    if (vec == NULL)
-    {
-        puts("ERROR - Attempted to set a null vector");
-        exit(EXIT_FAILURE);
-    }
     vec->y = y;
 }
 

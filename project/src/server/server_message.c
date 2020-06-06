@@ -12,7 +12,6 @@
 
 void message_recv_color(int socket, Color* color)
 {
-    // Receive the data
     message_recv_uint32_t(socket, (uint32_t*)color);
 }
 
@@ -53,7 +52,7 @@ void message_send_player_list(int socket, Game* game)
 {
     message_send_uint16_t(socket, (uint16_t)MESSAGE_PLAYER_LIST);
 
-    unsigned int n_players;
+    unsigned int n_players = 0;
     Player** players = game_get_player_array(game, &n_players);
     
     // Send the number of players

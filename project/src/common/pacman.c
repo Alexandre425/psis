@@ -105,7 +105,7 @@ void board_random_empty_space(Board* board, int* x, int* y)
     do
     {
         *x = rand() % vec_get_x(board->board_size); // It aint efficient
-        *y = rand() % vec_get_y(board->board_size); //  but it works
+        *y = rand() % vec_get_y(board->board_size); //  but it works, it just works
     }
     while (board->board[*x][*y] != TILE_EMPTY);
 }

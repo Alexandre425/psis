@@ -37,6 +37,7 @@ enum _MessageType {
     };
 
 // Ran when a misaligned message is detected in the receiving end
+// Exits the process
 void message_misaligned(void);
 
 // Sends a 1 byte char
@@ -80,3 +81,5 @@ int message_recv_uint32_t(int socket, uint32_t* message);
 // Handles endianess
 // Returns 1 on success, 0 on socket close, -1 on error
 int message_recv_int32_t(int socket, int32_t* message);
+
+// And like that, we're done! Finally

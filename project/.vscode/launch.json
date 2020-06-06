@@ -27,7 +27,7 @@
             "name": "(gdb) Client",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/client_app",
+            "program": "${workspaceFolder}/client_app",
             "args": ["127.0.0.1:25000", "ff0000"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

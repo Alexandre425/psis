@@ -69,7 +69,7 @@ void* recv_from_server(void* _game)
         }
         else if (ret == -1)
         {
-            if (errno == EINTR)
+            if (errno == EINTR) // Interrupted by a signal
             {
                 break;
             }
@@ -79,11 +79,11 @@ void* recv_from_server(void* _game)
                 exit(EXIT_FAILURE);
             }
         }
-        switch (mt)
-        {
+        switch (mt) // Select the apropriate function to read the message
+        {   
         case MESSAGE_BOARD:
         {
-            Board* board;
+            Board* board = NULL;
             message_recv_board(server_socket, &board);
             game_set_board(game, board);
             break;
@@ -95,7 +95,7 @@ void* recv_from_server(void* _game)
         }
         case MESSAGE_PLAYER_ID:
         {
-            unsigned int player_id;
+            unsigned int player_id = 0;
             message_recv_player_id(server_socket, &player_id);
             game_set_player_id(game, player_id);
             break;
@@ -108,7 +108,7 @@ void* recv_from_server(void* _game)
 
         case MESSAGE_PLAYER_DISCONNECT:
         {
-            unsigned int player_id;
+            unsigned int player_id = 0;
             message_recv_player_disconnect(server_socket, &player_id);
             player_destroy(game, player_id);
             break;

@@ -34,6 +34,6 @@ int send_all (int socket, void* buffer, size_t size);
 // Returns 1 on success, 0 on close, -1 on error
 int recv_all (int socket, void* buffer, size_t size);
 
-// Changes the working directory to the executable's
+// Changes the working directory to the executable's directory
 void change_to_exec_dir(char* argv0);
 

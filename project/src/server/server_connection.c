@@ -31,8 +31,7 @@ static Client** client_array = NULL;
 static void client_store(Client* client)
 {
     pthread_mutex_lock(&client_array_lock);
-    // If first client
-    if (!client_array)
+    if (!client_array)  // If first client
     {
         n_clients++;
         client_array = malloc_check(sizeof(Client*));
@@ -44,7 +43,6 @@ static void client_store(Client* client)
     }
     client_array[n_clients - 1] = client;
     pthread_mutex_unlock(&client_array_lock);
-
 }
 
 // Removes a client's pointer from the array
@@ -70,9 +68,9 @@ static void client_destroy(Client* client)
 
 // Signal handler for the connect_to_clients thread
 // Interrupts the blocking accept()
-void shutdown_handler(int unused)
+static void shutdown_handler(int unused)
 {
-    for (unsigned int i = 0; i < n_clients; ++i)
+    for (unsigned int i = 0; i < n_clients; ++i)    // Kill every thread connected to it's client
     {
         pthread_kill(client_array[i]->handler_thread, SIGUSR1);
     }
@@ -182,10 +180,10 @@ void* connect_to_clients (void* game)
 
 void* recv_from_client (void* _client)
 {
-    // Cast to Client (like that wasn't obvious)
+    // Cast to Client (as if that wasn't obvious)
     Client* client = (Client*)_client;
 
-    // Handle the shutdown signal
+    // Handle the shutdown signal (to interrupt the accept)
     struct sigaction action;
     action.sa_handler = null_handler;
     action.sa_flags = 0;
@@ -200,7 +198,7 @@ void* recv_from_client (void* _client)
     while (1)
     {
         // Determine message type
-        MessageType mt;
+        MessageType mt = MESSAGE_TERMINATOR;
         int ret = message_recv_uint16_t(client->socket, (uint16_t*)&mt);
         if (ret == 0)
         {
@@ -226,19 +224,18 @@ void* recv_from_client (void* _client)
             puts("ERROR - Couldn't find player in recv_from_client");
             exit(EXIT_FAILURE);
         }
-        // Use function respective to type
-        switch (mt)
+        switch (mt) // Use the correct function according to the type
         {
         case MESSAGE_COLOR:
         {
-            Color color;
+            Color color = 0;
             message_recv_color(client->socket, &color);
             player_set_color(player, color);
             break;
         }
         case MESSAGE_MOVE_PAC:
         {
-            char move_dir;
+            char move_dir = 0;
             message_recv_movement(client->socket, (char*)&move_dir);
             if (move_dir == 'w' || move_dir == 'a' || move_dir == 's' || move_dir == 'd' || move_dir == (char)0)
                 player_set_pac_move_dir(player, move_dir);
@@ -246,7 +243,7 @@ void* recv_from_client (void* _client)
         }
         case MESSAGE_MOVE_MON:
         {
-            char move_dir;
+            char move_dir = 0;
             message_recv_movement(client->socket, (char*)&move_dir);
             if (move_dir == 'w' || move_dir == 'a' || move_dir == 's' || move_dir == 'd' || move_dir == (char)0)
                 player_set_mon_move_dir(player, move_dir);
@@ -306,6 +303,7 @@ void send_to_all_clients(Game* game, MessageType message_type, void* extra_data)
             break;
         case MESSAGE_PRINT_SCOREBOARD:
             message_send_print_scoreboard_order(client_array[i]->socket);
+            break;
         default:
             break;
         }

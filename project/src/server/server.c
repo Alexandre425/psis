@@ -122,11 +122,11 @@ static void fruit_respawn(Game* game, Fruit* fruit)
 // Returns the fruit on given position
 static Fruit* fruit_find_by_pos(Game* game, int x, int y)
 {
-    for (unsigned int i = 0; i < game->n_fruits; ++i)
+    for (unsigned int i = 0; i < game->n_fruits; ++i)   // For every fruit
     {
-        Fruit* fruit = game->fruits[i];
+        Fruit* fruit = game->fruits[i];                 // See if the position matches the parameters
         if (x == vec_get_x(fruit->pos) && y == vec_get_y(fruit->pos))
-            return fruit;
+            return fruit;                               // Returns the fruit struct ptr
     }
     puts("ERROR - Attempted to find fruit in a position where there is none");
     exit(EXIT_FAILURE);
@@ -190,7 +190,7 @@ unsigned int player_create(Game* game)
     }
     new_player->player_id = player_id;
 
-    // Put characters in a random position
+    // Put characters in a random (empty) position
     int x, y;
     board_random_empty_space(game->board, &x, &y);  // Pacman
     new_player->pacman_pos = vec_create(x, y);
@@ -200,7 +200,7 @@ unsigned int player_create(Game* game)
     new_player->monster_pos = vec_create(x, y);
     board_set_tile(game->board, x, y, board_player_id_to_tile_type(player_id, 0));
 
-    // Initialize the move timer
+    // Initialize the move timer (player can move the characters in 0.5s)
     clock_gettime(CLOCK_MONOTONIC, &new_player->monster_last_move_time);
     clock_gettime(CLOCK_MONOTONIC, &new_player->pacman_last_move_time);
 
@@ -298,7 +298,6 @@ void player_set_mon_move_dir(Player* player, char move_dir)
     player->monster_move_dir = move_dir;
 }
 
-
 // Reads the board file and initializes the board in the game struct
 // Returns the number of empty spaces on the board
 static unsigned int read_board(Game* game, char* path)
@@ -364,11 +363,11 @@ static void draw_bricks(Game* game)
 // Draws the players
 static void draw_players(Game* game)
 {
-    for (unsigned int i = 0; i < game->n_players; ++i)
+    for (unsigned int i = 0; i < game->n_players; ++i)  // For every player
     {
         Player* player = game->players[i];
         unsigned int r, g, b;
-        color_hex_to_rgb(player->color, &r, &g, &b);
+        color_hex_to_rgb(player->color, &r, &g, &b);    // Get the RGB values
         paint_pacman(vec_get_x(player->pacman_pos), vec_get_y(player->pacman_pos), r, g, b, player->powered_up);
         paint_monster(vec_get_x(player->monster_pos), vec_get_y(player->monster_pos), r, g, b);
     }
@@ -454,12 +453,12 @@ static void handle_character_eat(Game* game, int eater_x, int eater_y, int eaten
         if (board_tile_type_is_pacman(eaten_tile) == 1)             // If a monster eats a Pacman
         {
             vec_set(eaten_player->pacman_pos, res_x, res_y);        // Pacman respawns
-            vec_set(eater_player->monster_pos, eaten_x, eaten_y);   // Put the monster in the Pacman's position
+            vec_set(eater_player->monster_pos, eaten_x, eaten_y);   // Put the monster in the Pacman's old position
         }
         else                                                        // If a Pacman eats a monster
         {
             vec_set(eaten_player->monster_pos, res_x, res_y);       // Monster respawns
-            vec_set(eater_player->pacman_pos, eaten_x, eaten_y);    // Put the Pacman in the monster's position
+            vec_set(eater_player->pacman_pos, eaten_x, eaten_y);    // Put the Pacman in the monster's old position
         }
         board_set_tile(game->board, eaten_x, eaten_y, eater_tile);  // Move things on the board
         board_set_tile(game->board, res_x, res_y, eaten_tile);                                                       
@@ -480,7 +479,7 @@ static void handle_character_eat(Game* game, int eater_x, int eater_y, int eaten
         }
         board_set_tile(game->board, res_x, res_y, eaten_tile);      // Move things on the board                                             
     }
-    eater_player->score++;
+    eater_player->score++;  // Increment the eater's score
 }
 
 // Handles a character eating a fruit
@@ -502,9 +501,9 @@ static void handle_fruit_eat(Game* game, Fruit* fruit, Player* player, int is_pa
     board_set_tile(game->board, fruit_x, fruit_y, board_get_tile(game->board, player_x, player_y)); // Move things on the board
     board_set_tile(game->board, player_x, player_y, TILE_EMPTY);
 
-    player->score++;
-    fruit->is_alive = 0;    // Set the time the fruit was eaten
-    clock_gettime(CLOCK_MONOTONIC, &fruit->eaten_time);
+    player->score++;        // Increment the player's score
+    fruit->is_alive = 0;    // Kill the fruit
+    clock_gettime(CLOCK_MONOTONIC, &fruit->eaten_time); // Set the time it was eaten
 }
 
 // Handles movement for the pacman
@@ -513,7 +512,7 @@ static void handle_pacman_move(Game* game, Player* player, int tgt_x, int tgt_y)
     int curr_x = vec_get_x(player->pacman_pos), curr_y = vec_get_y(player->pacman_pos); // The current position
     unsigned int tile = board_get_tile(game->board, tgt_x, tgt_y);
     if (board_is_oob(game->board, tgt_x, tgt_y))        // If the target is OOB (out of bounds)
-        tile = TILE_BRICK;                              // Handle collisions as if the target is a brick (bounce back)
+        tile = TILE_BRICK;                              // Handle collisions as if the target were a brick (bounce back)
     switch (tile)
     {
     case TILE_EMPTY:            // Simply move into the empty tile
@@ -523,7 +522,7 @@ static void handle_pacman_move(Game* game, Player* player, int tgt_x, int tgt_y)
         clock_gettime(CLOCK_MONOTONIC, &player->pacman_last_move_time);                         // Update the last move time
         break;
 
-    case TILE_FRUIT:
+    case TILE_FRUIT:            // Eat the fruit
     {
         Fruit* fruit = fruit_find_by_pos(game, tgt_x, tgt_y);
         handle_fruit_eat(game, fruit, player, 1);
@@ -540,7 +539,7 @@ static void handle_pacman_move(Game* game, Player* player, int tgt_x, int tgt_y)
             handle_pacman_move(game, player, tgt_x, tgt_y);                                                         // Handle the new target tile
         break;
 
-    default:                    // Could be a friendly or enemy
+    default:                    // Not tile, empty or fruit: there's 3 possible cases
         if (board_tile_type_to_player_id(tile) == player->player_id)    // If friendly monster
         {
             board_set_tile(game->board, tgt_x, tgt_y, board_get_tile(game->board, curr_x, curr_y)); // Swap the characters on the board
@@ -651,11 +650,12 @@ static void handle_monster_move(Game* game, Player* player, int tgt_x, int tgt_y
     }
 }
 
+// Handles the teleportation of a character when they are inactive
 static void handle_inactivity_move(Game* game, Player* player, int is_pacman)
 {
     int x, y;
     board_random_empty_space(game->board, &x, &y);
-    if (x != -1)
+    if (x != -1)    // If there is an empty space available
     {
         int curr_x, curr_y;
         if (is_pacman)
@@ -675,7 +675,7 @@ static void handle_inactivity_move(Game* game, Player* player, int is_pacman)
     }
 }
 
-// Moves the characters, their interactions, handles fruit spawning and all things Pacman related
+// Moves the characters, handles their interactions, handles fruit spawning and all things Pacman related
 static void game_update(Game* game)
 {
     // Move the characters if enough time has passed
@@ -685,11 +685,11 @@ static void game_update(Game* game)
     {
         Player* player = game->players[i];
         if (time_diff_ms(player->monster_last_move_time, now) > 500 && player->monster_move_dir != (char)0) // If the last movement happened more than 500ms ago
-        {                                                                                                   // and the monster wants to move
+        {                                                                                                   //  and the monster wants to move
             int tgt_x = vec_get_x(player->monster_pos), tgt_y = vec_get_y(player->monster_pos); // Get the current position
             get_target_tile(&tgt_x, &tgt_y, player->monster_move_dir);                          // Get the target position
 
-            handle_monster_move(game, player, tgt_x, tgt_y);
+            handle_monster_move(game, player, tgt_x, tgt_y);                                    // Move it move it
         }
         else if (time_diff_ms(player->monster_last_move_time, now) > 30000)     // Inactivity counter
         {
@@ -702,7 +702,7 @@ static void game_update(Game* game)
 
             handle_pacman_move(game, player, tgt_x, tgt_y);
         }
-        else if (time_diff_ms(player->pacman_last_move_time, now) > 30000)     // Inactivity counter
+        else if (time_diff_ms(player->pacman_last_move_time, now) > 30000)
         {
             handle_inactivity_move(game, player, 1);
         }
@@ -725,7 +725,7 @@ int main (int argc, char* argv[])
     // Initialized to zero due to the nature of malloc_check()
     Game* game = malloc_check(sizeof(Game));
 
-    // RNG seeding (for player placement upon connection)
+    // RNG seeding (for player placement upon connection, etc)
     srand(time(NULL));
 
     // Initialize the mutex
@@ -739,7 +739,7 @@ int main (int argc, char* argv[])
     unsigned int n_empty = read_board(game, "board-drawer/board.txt");
 
     // Calculate maximum number of clients
-    // This magic formula apparently works, yay for no if else statement
+    // This magic formula apparently works, yay for no nested condition mess
     game->max_players = floor(((float)n_empty + 2.0) / 4.0);
 
     // Thread for handling incoming client connections
@@ -774,7 +774,7 @@ int main (int argc, char* argv[])
         // Run a game tick
         game_update(game);
 
-        // Update the clients (if there are any)
+        // Update the clients with information (if there are any)
         if (game->n_players)
         {
             send_to_all_clients(game, MESSAGE_BOARD, NULL);

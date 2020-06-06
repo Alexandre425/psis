@@ -37,8 +37,8 @@ typedef struct _Fruit
 typedef struct _Game
 {
     int server_socket;
-    unsigned int player_id;
-    Board* board;
+    unsigned int player_id;     // This client's ID on the server, used to
+    Board* board;               //  identificate the client's own characters
     unsigned int n_players;
     Player** players;
     unsigned int n_fruits;
@@ -72,23 +72,23 @@ void game_set_board(Game* game, Board* board)
 }
 void game_set_n_fruits(Game* game, unsigned int n_fruits)
 {
-    if (n_fruits > game->n_fruits)
+    if (n_fruits > game->n_fruits)  // If the number of fruits increased
     {
-        if (!game->fruits)          // If fruits were created
+        if (!game->fruits)  // Is the fruit array already initialized?
             game->fruits = malloc_check(n_fruits * sizeof(Fruit));  // This already zeroes things out :)
         else
         {
             unsigned int diff = n_fruits - game->n_fruits;
             game->fruits = realloc_check(game->fruits, n_fruits * sizeof(Fruit));
             memset(game->fruits + (game->n_fruits * sizeof(Fruit)), 0, diff * sizeof(Fruit));   // Basically zeroes out the memory added with the realloc
-        }                                                                                       // it's bad, but I ain't allocating every fruit, nuh uh
-    }
-    if (n_fruits < game->n_fruits)  // If fruits were deleted (players left)
+        }                                                                                       //  a bit messy looking, but works. fruit_set_pos relies on
+    }                                                                                           //  fruit.pos being NULL, so this is a necessary evil
+    if (n_fruits < game->n_fruits)  // If the number of fruits decreased
     {
         unsigned int diff = game->n_fruits - n_fruits;  // Find how many fruits were deleted
         for (unsigned int i = 0; i < diff; ++i)         // Free that many fruit in the end of the array which 
         {                                               //  prevents a memory leak with unused vectors
-            free(game->fruits[game->n_fruits - 1 - i].pos);     // r/badcode worthy? oof
+            free(game->fruits[game->n_fruits - 1 - i].pos);     // r/badcode worthy? oof, messy
         }
     }
     game->n_fruits = n_fruits;
@@ -96,11 +96,11 @@ void game_set_n_fruits(Game* game, unsigned int n_fruits)
 
 void game_print_scoreboard(Game* game)
 {
-    puts("PLAYER\t| SCORE");
-    for (unsigned int i = 0; i < game->n_players; ++i)
+    puts("PLAYER\t| SCORE");                            // Print the header
+    for (unsigned int i = 0; i < game->n_players; ++i)  // For every player
     {
         Player* player = game->players[i];
-        if (player->player_id == game->player_id)
+        if (player->player_id == game->player_id)       // Print their player ID and score
             fprintf(stdout, "%d (you)\t| %d\n", player->player_id, player->score);
         else
             fprintf(stdout, "%d\t| %d\n", player->player_id, player->score);
@@ -111,10 +111,10 @@ void game_print_scoreboard(Game* game)
 
 void fruit_set_pos(Fruit* fruit, int x, int y)
 {
-    if (!fruit->pos)
-        fruit->pos = vec_create(x, y);
+    if (!fruit->pos)                    // If the position vector is not yet initialized
+        fruit->pos = vec_create(x, y);  // Initialize it
     else
-        vec_set(fruit->pos, x, y);
+        vec_set(fruit->pos, x, y);      // Otherwise just store it
 }
 void fruit_set_type(Fruit* fruit, unsigned int fruit_type)
 {
@@ -128,14 +128,14 @@ void fruit_set_is_alive(Fruit* fruit, int is_alive)
 
 Player* player_find_by_id(Game* game, unsigned int player_id)
 {
-    for (unsigned int i = 0; i < game->n_players; ++i)
+    for (unsigned int i = 0; i < game->n_players; ++i)  // For every player
     {
         if (game->players[i]->player_id == player_id)
         {
-            return game->players[i];
+            return game->players[i];                    // Returns the player with the matching ID
         }
     }
-    return NULL;
+    return NULL;                                        // If they do not exist, return NULL
 }
 
 Player** game_get_player_array(Game* game, unsigned int* n_players)
@@ -146,13 +146,12 @@ Player** game_get_player_array(Game* game, unsigned int* n_players)
 
 Player* player_create(Game* game, unsigned int player_id)
 {
-    // If no players exist (array uninitialized)
-    if (!game->players)
+    if (!game->players)             // If no players exist (array uninitialized)
     {
         game->n_players++;
         game->players = malloc_check(sizeof(Player*));
     }
-    else
+    else                            // Make room for an extra player
     {
         game->n_players++;
         game->players = realloc_check(game->players, game->n_players * sizeof(Player*));
@@ -183,13 +182,15 @@ void player_destroy(Game* game, unsigned int player_id)
     // Overwrite the player to be destroyed with the last player
     memcpy(player, game->players[game->n_players-1], sizeof(Player));
 
-    // Free the player struct
+    // Free the last player struct
     free(game->players[game->n_players-1]);
 
     game->n_players--;
     // Not strictly necessary, but prevents a bug with player_create where
-    // the second client joining an empty server gets assigned player_id 2
-    // instead of 1 (as the array still contains the data after the realloc)
+    //  the second client joining an empty server gets assigned player_id 2
+    //  instead of 1 (as the array still contains the data after the realloc)
+    // Post comment: The code changed so idk if it's even necessary for that. But it does no harm,
+    //  and I'm not removing it and risk it breaking lol
     if (game->n_players == 0)
     {
         free(game->players);
@@ -260,7 +261,7 @@ static void draw_fruit(Game* game)
     for (unsigned int i = 0; i < game->n_fruits; ++i)
     {
         Fruit* fruit = &game->fruits[i];
-        if (!fruit->is_alive)
+        if (!fruit->is_alive)                   // Don't draw the fruit if it has been eaten
             continue;
         if (fruit->fruit_type == FRUIT_CHERRY)
             paint_cherry(vec_get_x(fruit->pos), vec_get_y(fruit->pos));
@@ -269,13 +270,16 @@ static void draw_fruit(Game* game)
     }
 }
 
+// Updates the key stack and pressed array according to a keyboard event. Used by the function below, read that first!
+// Essentialy allows the user to, for example, press and hold A, press and release D, while holding A
+//  and the monster moves how you'd expect, left, right, then left again on the release
 static void update_key(char* wasd_stack, unsigned int* wasd_pressed, unsigned int* n_pressed, char key, Uint8 state)
 {
-    // If the key is newly pressed
+    // If the key was just pressed
     if (state)
     {
         // Update the pressed key array and push to WASD stack
-        switch (key)
+        switch (key)    // I will die regretting not making this with bitwise flags
         {
         case 'w':
             wasd_pressed[0] = 1;
@@ -295,7 +299,7 @@ static void update_key(char* wasd_stack, unsigned int* wasd_pressed, unsigned in
         wasd_stack[*n_pressed] = key;
         *n_pressed = *n_pressed + 1;
     }
-    // If the key is newly released
+    // If the key was just released
     else
     {
         // Update the pressed key array
@@ -325,7 +329,7 @@ static void update_key(char* wasd_stack, unsigned int* wasd_pressed, unsigned in
                 // Shift remaining keys down
                 for (; i < *n_pressed-1; ++i)
                 {
-                    wasd_stack[i] = wasd_stack[i+1];
+                    wasd_stack[i] = wasd_stack[i+1];    // I will also die regretting not making a stack / queue struct
                 }
                 break;
             }
@@ -344,30 +348,26 @@ static void handle_user_input(int server_socket, Game* game ,SDL_Event event)
     // They are removed once released
     static char wasd_stack[4] = {0,0,0,0};
     // Stores which of they keys is currently pressed as a 1
-    // W is addr 0, A is addr 1,...
+    // W is idx 0, A is idx 1,...
     // WASD
     static unsigned int wasd_pressed[4] = {0,0,0,0};
     static unsigned int n_pressed = 0;
 
     const Uint8* keys_pressed = SDL_GetKeyboardState(NULL);
 
-    // If the state of the a key differs from the last frame
-    if (keys_pressed[SDL_SCANCODE_W] != wasd_pressed[0])
-    {
+    // If the state of the a key differs from the last frame or in other words
+    //  if the user pressed or released a key this frame
+    if (keys_pressed[SDL_SCANCODE_W] != wasd_pressed[0])    // Update the stack and pressed arrays
         update_key(wasd_stack, wasd_pressed, &n_pressed, 'w', keys_pressed[SDL_SCANCODE_W]);
-    }
+
     else if (keys_pressed[SDL_SCANCODE_A] != wasd_pressed[1])
-    {
         update_key(wasd_stack, wasd_pressed, &n_pressed, 'a', keys_pressed[SDL_SCANCODE_A]);
-    }
+
     else if (keys_pressed[SDL_SCANCODE_S] != wasd_pressed[2])
-    {
         update_key(wasd_stack, wasd_pressed, &n_pressed, 's', keys_pressed[SDL_SCANCODE_S]);
-    }
+
     else if (keys_pressed[SDL_SCANCODE_D] != wasd_pressed[3])
-    {
         update_key(wasd_stack, wasd_pressed, &n_pressed, 'd', keys_pressed[SDL_SCANCODE_D]);
-    }
 
     // The monster's last and current movement directions
     static char last_move_mon = (char)-1;
@@ -378,7 +378,7 @@ static void handle_user_input(int server_socket, Game* game ,SDL_Event event)
     else                                                // Otherwise the monster stops
         curr_move_mon = (char)0;
     // If there is a new movement direction (different from the last one sent)
-    if (curr_move_mon != last_move_mon)
+    if (curr_move_mon != last_move_mon) // Send it to the server then, and only then
     {
         message_send_movement_mon(server_socket, curr_move_mon);
         last_move_mon = curr_move_mon;
@@ -416,14 +416,13 @@ static void handle_user_input(int server_socket, Game* game ,SDL_Event event)
                 curr_move_pac = 'w';
         }
     }
-    else
+    else    // If the user isn't pressing mouse 1
     {
-        // Tell the server to stop the pacman
         curr_move_pac = (char)0;
     }
 
     // If there is a new movement direction
-    if (curr_move_pac != last_move_pac)
+    if (curr_move_pac != last_move_pac) // Send it to the server, same as with the monster
     {
         message_send_movement_pac(server_socket, curr_move_pac);
         last_move_pac = curr_move_pac;
@@ -442,8 +441,8 @@ int main (int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
     // Read server IP and port from string
-    char* ip_str = strtok(argv[1], ":");
-    char* port_str = strtok(NULL, ":");
+    char* ip_str = strtok(argv[1], ":");    
+    char* port_str = strtok(NULL, ":");     // Praise static variables
     // Read the color
     Color color;
     sscanf(argv[2], "%x", &color);
@@ -481,9 +480,8 @@ int main (int argc, char* argv[])
                 break;
             }
 		}
-
+        // All of these should be self explanatory
         handle_user_input(server_socket, game, event);
-        // Clear the board to render over
         clear_board(board_get_size_x(game->board), board_get_size_y(game->board));
         draw_bricks(game);
         draw_players(game);

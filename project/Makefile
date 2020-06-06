@@ -2,7 +2,7 @@
 CC = gcc
 
 #flags for individual object file compilation
-CFLAGS = -Wall -g
+CFLAGS = -Wall
 LINKS = -lpthread -lSDL2 -lSDL2_image -lm
 #RELEASE
 # -Wall -O3
