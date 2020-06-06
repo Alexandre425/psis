@@ -364,7 +364,7 @@
         \end{lstlisting}
 
     \section{Validação de dados}
-        \par Na transação de informação, é especialmente importante protejer o servidor de informação possívelmente prejudicial. Deste modo, é necessário verificar os dados que chegam ao servidor são válidos, e agir de acordo com o resultado. Um exemplo de verificação de dados está representado abaixo, um excerto da função \textit{receive\_from\_client} (funcionalmente idêntica à analisada acima) do ficheiro \textit{server\_connection.c}:
+        \par Na transação de informação, é especialmente importante protejer o servidor de informação possívelmente prejudicial. Deste modo, é necessário verificar que os dados que chegam ao servidor são válidos, e agir de acordo com o resultado. Um exemplo de verificação de dados está representado abaixo, um excerto da função \textit{receive\_from\_client} (funcionalmente idêntica à analisada acima) do ficheiro \textit{server\_connection.c}:
         \begin{lstlisting}
             case MESSAGE_MOVE_PAC:
             {
@@ -375,5 +375,225 @@
                 break;
             }
         \end{lstlisting}
-        \par Caso um cliente enviasse uma direção de movimento inválida, poderiam haver consequências críticas para o funcionamento do servidor, a não ser que o movimento também fosse verificado mais à frente, antes dos personagens serem movidos, por exemplo. Ao verificar assim que a mensagem é recebida, e ignorando-a caso não seja válida, assegura-se a proteção do servidor de dados inválidos e simplifica-se o processo de \textit{error-checking}.
+        \par Caso um cliente enviasse uma direção de movimento inválida, poderiam haver consequências graves para o funcionamento do servidor, a não ser que o movimento também fosse verificado mais à frente, antes dos personagens serem movidos, por exemplo. Ao verificar assim que a mensagem é recebida, e ignorando-a caso não seja válida, assegura-se a proteção do servidor de dados inválidos e simplifica-se o processo de \textit{error-checking}.
+
+        \par Outro exemplo de leitura e interpretação de erros está relacionado com o método escolhido para terminar a \textit{thread} que aceita conexões dos novos clientes. Quando o servidor fecha por meio da janela \textit{SDL2}, há que alertar as outras \textit{threads} do processo. Isto é feito por meio de um sinal enviado através de \textit{pthread\_kill}, de modo a que o \textit{accept} (na \textit{thread} que gere as conexões) ou o \textit{read} (nas \textit{threads} que comunicam com os clientes) desbloqueiem. Após isto, estas funções retornam -1, mas é importante analisar mais profundamente (através da variável \textit{errno}) o erro, determinando se se trata da interrupção ou de outro erro indesejado. Um excerto relevante da função \textit{connect\_to\_clients} de \textit{server\_connection.c} encontra-se abaixo:
+        
+        \begin{lstlisting}
+            // ...
+            // Tell the kernel to listen on this socket
+            listen(listen_socket, 5);
+
+            // Accept all incoming connections
+            int client_socket;
+            while (1)
+            {
+                // Accept connections - blocks until a client connects
+                client_socket = accept(listen_socket, NULL, NULL);
+                if (client_socket == -1)
+                {
+                    // If accept was interrupted by a signal (means server is shutting down)
+                    if (errno == EINTR)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        perror("ERROR - Accept failed");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                // ...
+        \end{lstlisting}
+
+    \section{Funcionalidades Implementadas}
+
+        \subsection{Controlo dos personagens pelo cliente}
+            \par O cliente controla o Pacman segurando o botão esquerdo do rato e movendo o ponteiro de acordo com a direção que se quer deslocar (se quiser que o Pacman se desloque para cima, coloca o ponteiro acima do Pacman). O monstro é controlado com as teclas W, A, S e D.
+            \par De modo a determinar a direção em que o Pacman se deve mover, o cliente tem de comparar as posições do Pacman e do ponteiro. De forma geral, o Pacman tenta deslocar-se no sentido que minimiza a sua distância ao ponteiro, ou seja, ao longo do eixo que apresenta a maior distância entre os dois. Por outras palavras, se o ponteiro estiver "mais para a direita" (face às outras direções) do Pacman, este move-se para a direita. Este processo é realizado pela função \textit{handle\_user\_input} de \textit{client.c}, o excerto relevante da qual está abaixo:
+            
+            \begin{lstlisting}
+                static char last_move_pac = -1;
+                static char curr_move_pac = -1;
+                int mouse_x = 0, mouse_y = 0, board_x = 0, board_y = 0;
+                // If the user is pressing LMB
+                if (SDL_GetMouseState(&mouse_x, &mouse_y) & SDL_BUTTON(SDL_BUTTON_LEFT))
+                {
+                    get_board_place(mouse_x, mouse_y, &board_x, &board_y);
+                    Player* player = player_find_by_id(game, game->player_id);
+                    int pac_x = player_get_pac_pos_x(player), pac_y = player_get_pac_pos_y(player);
+                    // Compute the distance between the pacman and the tile the mouse points to
+                    // The pacman will move in the direction which shows the biggest discrepancy, or not move if null distance
+                    if (board_x == pac_x && board_y == pac_y)                       // If the mouse is over the pacman
+                    {
+                        curr_move_pac = (char)0;
+                    }
+                    else if (abs_int(board_x - pac_x) > abs_int(board_y - pac_y))   // If further in the x direction
+                    {
+                        if (board_x > pac_x)
+                            curr_move_pac = 'd';
+                        else
+                            curr_move_pac = 'a';
+                    }
+                    else                                                            // If further in the y direction
+                    {
+                        if (board_y > pac_y)
+                            curr_move_pac = 's';
+                        else
+                            curr_move_pac = 'w';
+                    }
+                }
+                else    // If the user isn't pressing mouse 1
+                {
+                    curr_move_pac = (char)0;
+                }
+            \end{lstlisting}
+            
+            \par O movimento do monstro é implementado de forma ligeiramente mais complexa. Regra geral, jogador espera poder segurar a tecla A para se mover para a esquerda, carregar na tecla W para se mover para cima e, ao largar o W, continuar a mover-se para a esquerda sem ter de pressionar a tecla A novamente. Para que isto aconteça, é implementado um \textit{stack} de 4 teclas, de modo a que, qualquer que seja a combinação de teclas premida, ao largar a última tecla, a penúltima (desde que continue premida) dita a direção de movimento. O excerto relevante (presente na mesma função que o excerto acima) está abaixo:
+            \begin{lstlisting}
+                // Stores the WASD keys in order of them being pressed
+                // They are removed once released
+                static char wasd_stack[4] = {0,0,0,0};
+                // Stores which of they keys is currently pressed as a 1
+                // W is idx 0, A is idx 1,...
+                // WASD
+                static unsigned int wasd_pressed[4] = {0,0,0,0};
+                static unsigned int n_pressed = 0;
+            
+                const Uint8* keys_pressed = SDL_GetKeyboardState(NULL);
+            
+                // If the state of the a key differs from the last frame or in other words
+                //  if the user pressed or released a key this frame
+                if (keys_pressed[SDL_SCANCODE_W] != wasd_pressed[0])    // Update the stack and pressed arrays
+                    update_key(wasd_stack, wasd_pressed, &n_pressed, 'w', keys_pressed[SDL_SCANCODE_W]);
+            
+                else if (keys_pressed[SDL_SCANCODE_A] != wasd_pressed[1])
+                    update_key(wasd_stack, wasd_pressed, &n_pressed, 'a', keys_pressed[SDL_SCANCODE_A]);
+            
+                else if (keys_pressed[SDL_SCANCODE_S] != wasd_pressed[2])
+                    update_key(wasd_stack, wasd_pressed, &n_pressed, 's', keys_pressed[SDL_SCANCODE_S]);
+            
+                else if (keys_pressed[SDL_SCANCODE_D] != wasd_pressed[3])
+                    update_key(wasd_stack, wasd_pressed, &n_pressed, 'd', keys_pressed[SDL_SCANCODE_D]);
+            
+                // The monster's last and current movement directions
+                static char last_move_mon = (char)-1;
+                static char curr_move_mon = (char)-1;
+                // Update the current movement direction
+                if (n_pressed)                                      // If any keys are pressed, movement is the last pressed key
+                    curr_move_mon =  wasd_stack[n_pressed - 1];
+                else                                                // Otherwise the monster stops
+                    curr_move_mon = (char)0;
+                // If there is a new movement direction (different from the last one sent)
+            
+            \end{lstlisting}
+            \par O stack em si é gerido pela função \textit{update\_key}. A função é simples, adicionando uma tecla ao \textit{stack} quando esta é premida, e removendo quando é solta. No entanto é algo extensa, pelo que será omitida do relatório. Econtra-se no mesmo ficheiro que a anterior.
+
+        \subsection{Validação do número de jogadores}
+            
+            \par Devido ao fato do tabuleiro de jogo ser limitado, o servidor tem de estabelecer um limite de clientes. O número máximo de jogadores depende do número de células vazias do tabuleiro. O número de células \(C\) ocupadas por \(N\) jogadores vem:
+            \begin{equation}
+                C = 2N + 2 \textit{max}(0, N-1)
+            \end{equation}
+            \par Invertendo a equação, obtermos o número máximo de jogadores para um dado número de células como:
+            \begin{equation}
+                N_\textit{max} = \textit{floor}(\frac{C + 2}{4})
+            \end{equation}
+
+            \par O número máximo de jogadores é determinado na \textit{main} de \textit{server.c}:
+            \begin{lstlisting}
+                // Read the board
+                unsigned int n_empty = read_board(game, "board-drawer/board.txt");
+
+                // Calculate maximum number of clients
+                // This magic formula apparently works, yay for no nested condition mess
+                game->max_players = floor(((float)n_empty + 2.0) / 4.0);
+            \end{lstlisting}
+            \par A leitura do tabuleiro retorna o número de células vazias, que é utilizado para calcular o número máximo de jogadores. 
+            \par A função que aceita as novas conexões verifica se o servidor está cheio antes de guardar a informação relevante ao novo cliente (excerto de \textit{connect\_to\_clients} em \textit{server\_connection.c}):
+            \begin{lstlisting}
+                // Accept connections - blocks until a client connects
+                client_socket = accept(listen_socket, NULL, NULL);
+                // ... 
+                if (game_is_full(game))
+                {
+                    puts("Server is full, denying connection request");
+                    message_send_server_full(client_socket);
+                    continue;
+                }
+            \end{lstlisting}
+
+        \subsection{Colocação de novos jogadores no tabuleiro}
+        
+            \par De modo a colocar os personagens em sítios aleatórios, recorre-se à função \textit{board\_random\_empty\_space} de \textit{pacman.c}:
+            \begin{lstlisting}
+                if (!board_empty_space_exists(board))   // This prevents the mythical infinite loop
+                {
+                    *x = -1; *y = -1;
+                    return;
+                }
+                do
+                {
+                    *x = rand() % vec_get_x(board->board_size); // It aint efficient
+                    *y = rand() % vec_get_y(board->board_size); //  but it works, it just works
+                }
+                while (board->board[*x][*y] != TILE_EMPTY);
+            
+            \end{lstlisting}
+            \par Esta verifica primeiro se existe um espaço vazio, e depois gera coordenadas aleatórias até ser satisfeita a condição da célula se encontrar livre.
+            \par Quando um cliente se conecta geram-se duas posições aleatórias, nas quais se colocam o Pacman e o monstro. O excerto seguinte é da função \textit{player\_create} de \textit{server.c}:
+            \begin{lstlisting}
+                // Put characters in a random (empty) position
+                int x, y;
+                board_random_empty_space(game->board, &x, &y);  // Pacman
+                new_player->pacman_pos = vec_create(x, y);
+                board_set_tile(game->board, x, y, board_player_id_to_tile_type(player_id, 1));
+                board_random_empty_space(game->board, &x, &y);  // Monster
+                new_player->monster_pos = vec_create(x, y);
+                board_set_tile(game->board, x, y, board_player_id_to_tile_type(player_id, 0));
+            \end{lstlisting}
+            
+        \subsection{Desconexão dos clientes}
+            
+            \par Quando um dos lados de um \textit{socket INET} fecha a sua socket, a função \textit{recv} retorna 0 no lado oposto. O servidor faz uso disto para determinar se um cliente se desconecta, como se pode observar no excerto seguinte, da função \textit{recv\_from\_client} em \textit{server\_connection.c}:
+            \begin{lstlisting}
+                // Determine message type
+                MessageType mt = MESSAGE_TERMINATOR;
+                int ret = message_recv_uint16_t(client->socket, (uint16_t*)&mt);
+                if (ret == 0)
+                {
+                    fprintf(stdout, "Client %d left!\n", client->player_id);
+                    break;
+                }
+            \end{lstlisting}
+            \par Ao ler o tipo de mensagem enviado pelo cliente, verificando que o \textit{recv} retorna 0, o sevidor quebra o \textit{loop} e destrói as estruturas \textit{player} e \textit{client} associadas ao cliente, notificando os clientes restantes da desconexão.
+
+        \subsection{Movimento dos personagens}
+        
+            \par Para a tornar mais breve, nesta secção será abordado apenas o movimento do Pacman. O movimento do monstro é implementado de forma análoga, com as regras diferentes estabelecidas no enunciado do projeto.
+            \par A gestão do movimento do Pacman é feito pela função \textit{handle\_pacman\_move} em \textit{server.c}. Esta começa por verificar se a célula alvo (para a qual o Pacman tem o intuito de se mover) está \textit{out of bounds}, ou \textit{OOB}. Se for o caso, o movimento é feito considerando que o alvo é um tijolo, pois ambos os casos são funcionalmente idênticos.
+            \begin{lstlisting}
+                unsigned int tile = board_get_tile(game->board, tgt_x, tgt_y);
+                if (board_is_oob(game->board, tgt_x, tgt_y))        // If the target is OOB (out of bounds)
+                    tile = TILE_BRICK;                              // Handle collisions as if the target were a brick (bounce back)
+                switch (tile)
+                {
+                // ...
+            \end{lstlisting}
+            \par Caso o alvo seja um tijolo (ou, como foi visto antes, \textit{OOB}), verifica-se se é possível mover para a célula oposta e, caso esteja, a função é chamada recursivamente com a célula oposta como alvo.
+            \begin{lstlisting}
+                case TILE_BRICK:            // Bounce back (if able)
+                tgt_x = curr_x; tgt_y = curr_y;
+                get_opposite_target_tile(&tgt_x, &tgt_y, player->pacman_move_dir);                                          // Invert the movement direction
+                if (board_is_oob(game->board, tgt_x, tgt_y) || board_get_tile(game->board, tgt_x, tgt_y) == TILE_BRICK);    // If the new target tile is OOB or a brick
+                    // Stay in place, do nothing
+                else
+                    handle_pacman_move(game, player, tgt_x, tgt_y);                                                         // Handle the new target tile
+                break;
+            \end{lstlisting}
+            \par Caso a célula alvo esteja livre, o Pacman é simplesmente movido para a célula em questão. Existem duas representações da posição do Pacman, dentro da estrutura \textit{Player} e no tabuleiro, sendo que ambas têm de ser atualizadas.
+            \par Quando um fruto se encontra presente na célula alvo, faz-se recurso à função \textit{handle\_fruit\_eat}, que trata de mover o Pacman, incrementar a sua pontuação, torná-lo no \textit{powered-up} Pacman, e eliminar o fruto (temporariamente) do tabuleiro.
+            \par A troca de posição é algo trivial, resumindo-se à troca dos vetores de posição dos dois personagens, e das células respetivas no tabuleiro.
+            \par Quanto às interações com monstros inimigos, utiliza-se a função \textit{handle\_character\_eat}, que processa um personagem a comer outro, tendo em conta qual dos dois se move. Neste caso o Pacman é o personagem que se move. Se estiver também \textit{powered-up}, este move-se para a célula do monstro, tem o seu \textit{score} incrementado, estado de \textit{power-up} decrementado, e o monstro é movido para uma posição livre aleatória. Caso contrário, o monstro permanece na mesma posição, o seu jogador tem a pontuação incrementada, e o Pacman desloca-se para uma posição aleatória.
+
 \end{document}

@@ -6,3 +6,9 @@
 \BOOKMARK [1][-]{section.1.3}{Estruturas de dados}{}% 6
 \BOOKMARK [1][-]{section.1.4}{Protocolo de comunica\347\343o}{}% 7
 \BOOKMARK [1][-]{section.1.5}{Valida\347\343o de dados}{}% 8
+\BOOKMARK [1][-]{section.1.6}{Funcionalidades Implementadas}{}% 9
+\BOOKMARK [2][-]{subsection.1.6.1}{Controlo dos personagens pelo cliente}{section.1.6}% 10
+\BOOKMARK [2][-]{subsection.1.6.2}{Valida\347\343o do n\372mero de jogadores}{section.1.6}% 11
+\BOOKMARK [2][-]{subsection.1.6.3}{Coloca\347\343o de novos jogadores no tabuleiro}{section.1.6}% 12
+\BOOKMARK [2][-]{subsection.1.6.4}{Desconex\343o dos clientes}{section.1.6}% 13
+\BOOKMARK [2][-]{subsection.1.6.5}{Movimento dos personagens}{section.1.6}% 14
