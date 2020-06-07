@@ -197,6 +197,17 @@
         \end{lstlisting}
         \par O cliente necessita de saber o seu \textit{player\_id} e, por conveniência, dado que o cliente só comunica com uma outra entidade, a socket do servidor. Já o servidor guarda também o número máximo de jogadores, que o cliente não precisa de saber.
 
+        \par O servidor tem uma estrutura exclusiva que armazena informação relevante à conexão a um cliente, \textit{Client}, em \textit{server\_connection.c}:
+        \begin{lstlisting}
+            typedef struct _client
+            {
+                Game* game;
+                pthread_t handler_thread;
+                unsigned int player_id;
+                int socket;
+            } Client;
+        \end{lstlisting}
+
         \par Quanto às frutas, estas são implementadas \textit{client-side} por:
         \begin{lstlisting}
             typedef struct _Fruit
@@ -596,4 +607,83 @@
             \par A troca de posição é algo trivial, resumindo-se à troca dos vetores de posição dos dois personagens, e das células respetivas no tabuleiro.
             \par Quanto às interações com monstros inimigos, utiliza-se a função \textit{handle\_character\_eat}, que processa um personagem a comer outro, tendo em conta qual dos dois se move. Neste caso o Pacman é o personagem que se move. Se estiver também \textit{powered-up}, este move-se para a célula do monstro, tem o seu \textit{score} incrementado, estado de \textit{power-up} decrementado, e o monstro é movido para uma posição livre aleatória. Caso contrário, o monstro permanece na mesma posição, o seu jogador tem a pontuação incrementada, e o Pacman desloca-se para uma posição aleatória.
 
+        \subsection{Temporização}
+            \par Existem três eventos de jogo que dependem de do tempo: O movimento dos personagens, que ocorre a cada 0.5 segundos, o \textit{respawn} das frutas, que ocorre passado 2 segundos de terem sido comidas, e o movimento aleatório dos personagens por inatividade, que ocorre passado 30 segundos do último movimento do mesmo.
+            \par Todos estes eventos são geridos com o auxílio das funções \textit{clock\_gettime} (de \textit{time.h}), para guardar o tempo em que determinado evento ocorreu e determinar o tempo atual, e \textit{time\_diff\_ms} (em \textit{utilities.c}), que retorna a diferença entre dois instantes definidos por \textit{struct timespec} (o formato de tempo utilizado por \textit{clock\_gettime}).
+            \par Tomando o exemplo de quando um Pacman come uma fruta:
+            \begin{lstlisting}
+                case TILE_FRUIT:            // Eat the fruit
+                {
+                    Fruit* fruit = fruit_find_by_pos(game, tgt_x, tgt_y);
+                    handle_fruit_eat(game, fruit, player, 1);
+                    clock_gettime(CLOCK_MONOTONIC, &player->pacman_last_move_time);    
+                    break;
+                }
+            \end{lstlisting}
+            \par Como se observa, utiliza-se a função \textit{clock\_gettime} para guardar o instante em que o Pacman se move. A função \textit{handle\_fruit\_eat} também guarda o instante em que a fruta foi comida.
+            \par De modo a mover os personagens só após 0.5 segundos, e movê-los passado os 30 segundos de inatividade, a função \textit{game\_update} (em \textit{server.c}) avalia a diferença entre o instante atual e o instante em que o personagem se moveu por último:
+            \begin{lstlisting}
+                // Move the characters if enough time has passed
+                struct timespec now;
+                clock_gettime(CLOCK_MONOTONIC, &now);
+                for (unsigned int i = 0; i < game->n_players; ++i)
+                {
+                    Player* player = game->players[i];
+                    // ...
+                    if (time_diff_ms(player->pacman_last_move_time, now) > 500 && player->pacman_move_dir != (char)0)   // Same as above with pacman
+                    {
+                        int tgt_x = vec_get_x(player->pacman_pos), tgt_y = vec_get_y(player->pacman_pos);
+                        get_target_tile(&tgt_x, &tgt_y, player->pacman_move_dir);
+            
+                        handle_pacman_move(game, player, tgt_x, tgt_y);
+                    }
+                    else if (time_diff_ms(player->pacman_last_move_time, now) > 30000)
+                    {
+                        handle_inactivity_move(game, player, 1);
+                    }
+                    // ...
+                }
+            \end{lstlisting}
+            \par A mesma função trata de colocar os frutos no tabuleiro se tiverem sido comidos à mais de 2 segundos:
+            \begin{lstlisting}
+                // Respawn the fruits if enough time has passed
+                for (unsigned int i = 0; i < game->n_fruits; ++i)
+                {
+                    Fruit* fruit = game->fruits[i];
+                    if (!fruit->is_alive && time_diff_ms(fruit->eaten_time, now) > 2000)
+                        fruit_respawn(game, fruit);
+                }            
+            \end{lstlisting}
+
+        \subsection{\textit{Power-up} do Pacman}
+            \par O estado de \textit{power-up} do Pacman, como foi visto anteriormente, está simplesmente definido como um inteiro na estrutura \textit{Player}. Quando o Pacman come um fruto guarda-se o número 2 na variável, sendo esta decrementada quando come um monstro. Desta forma, quando o Pacman come dois monstros a variável chega a 0, e o Pacman deixa de estar \textit{powered-up}.
+
+        \subsection{Envio da tabela de pontuação}
+            \par A tabela de pontuação (ou, mais corretamente, a ordem para a imprimir na consola) é enviada a cada 60 segundos para todos os clientes a cada 60 segundos. A secção responsável da \textit{main} do servidor está abaixo:
+            \begin{lstlisting}
+                // Update the clients with information (if there are any)
+                if (game->n_players)
+                {
+                    // ...
+                    // Scoreboard is only sent every 60s
+                    static struct timespec last_scoreboard_time;
+                    if (last_scoreboard_time.tv_sec == 0)   // Static variables are thankfuly init'd as 0
+                        clock_gettime(CLOCK_MONOTONIC, &last_scoreboard_time);
+                    struct timespec now;
+                    clock_gettime(CLOCK_MONOTONIC, &now);
+                    if (time_diff_ms(last_scoreboard_time, now) > 60000)
+                    {
+                        send_to_all_clients(game, MESSAGE_PRINT_SCOREBOARD, NULL);
+                        clock_gettime(CLOCK_MONOTONIC, &last_scoreboard_time);
+                    }
+                }
+            \end{lstlisting}
+
+        \subsection{Limpeza de dados e libertação de recursos}
+            \par A limpeza de dados é realizada pelas funções marcadas com \textit{destroy}. Por exemplo, a função \textit{player\_destroy} (em \textit{server.c}) remove um \textit{Player} do array do servidor, libertando toda a memória utilizada por este. Estão ainda definidas funções equivalentes para destruir frutas, clientes (a estrutura de \textit{server\_connection.c}) e vetores.
+
+    \section{Sincronização}
+        \par O servidor faz uso de várias \textit{threads} que trabalham com o mesmo conjunto de dados. Por exemplo, o \textit{array} de \textit{Clients} é manuseado pela função que aceita novas conexões, por cada função que recebe informação de um cliente, e pela função que envia uma determinada mensagem a todos os clientes. Ora se a primeira juntasse um novo cliente ao \textit{array}, ou uma das segundas o removesse, enquanto a última estava a meio de um envio, poderia ocorrer um acesso de memória ilegal.
+        \par Deste modo, estabelece-se um \textit{mutex}, \textit{client\_array\_lock}, que é \textit{locked} e \textit{unlocked} no decorrer das funções \textit{client\_store}, \textit{client\_destroy} e \textit{send\_to\_all\_clients}, de forma a que não sejam executadas simultâneamente.
+        \par O mesmo acontece com o array de \textit{Players}. As funções \textit{player\_create} e \textit{player\_destroy} fazem uso do mesmo sistema com o seu próprio \textit{mutex}, \textit{player\_array\_lock}.
 \end{document}
